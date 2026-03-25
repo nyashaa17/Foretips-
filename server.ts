@@ -1,0 +1,146 @@
+import express from "express";
+import cors from "cors";
+import { createProxyMiddleware } from "http-proxy-middleware";
+import { createServer as createViteServer } from "vite";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
+async function startServer() {
+  const app = express();
+  const PORT = Number(process.env.PORT) || 3000;
+
+  // Configure CORS for your frontend domain
+  app.use(cors({
+    origin: 'https://foretips.co.zw',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+  }));
+
+  // API routes
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  // Proxy /api to https://sports.bzzoiro.com/api
+  app.use(createProxyMiddleware({
+    target: 'https://sports.bzzoiro.com',
+    changeOrigin: true,
+    pathFilter: '/api',
+    on: {
+      proxyReq: (proxyReq, req, res) => {
+        if (!req.headers.authorization) {
+          proxyReq.setHeader('Authorization', `Token ${process.env.SPORTSBZZOIRO_API_KEY}`);
+        }
+      },
+      error: (err, req, res) => {
+        console.error('Proxy error (/api):', err);
+        if ('headersSent' in res && !res.headersSent) {
+          (res as any).status(502).send('Bad Gateway');
+        }
+      }
+    }
+  }));
+
+  // Proxy /football-api to https://api.football-data.org/v4
+  app.use(createProxyMiddleware({
+    target: 'https://api.football-data.org/v4',
+    changeOrigin: true,
+    pathFilter: '/football-api',
+    pathRewrite: {
+      '^/football-api': '', // remove /football-api from the path
+    },
+    on: {
+      proxyReq: (proxyReq, req, res) => {
+        proxyReq.setHeader('X-Auth-Token', process.env.FOOTBALL_DATA_API_KEY || '');
+      },
+      error: (err, req, res) => {
+        console.error('Proxy error (/football-api):', err);
+        if ('headersSent' in res && !res.headersSent) {
+          (res as any).status(502).send('Bad Gateway');
+        }
+      }
+    }
+  }));
+
+  // Proxy /sportsdb-api to https://www.thesportsdb.com/api/v1/json/123
+  app.use(createProxyMiddleware({
+    target: 'https://www.thesportsdb.com/api/v1/json/123',
+    changeOrigin: true,
+    pathFilter: '/sportsdb-api',
+    pathRewrite: {
+      '^/sportsdb-api': '',
+    },
+    on: {
+      error: (err, req, res) => {
+        console.error('Proxy error (/sportsdb-api):', err);
+        if ('headersSent' in res && !res.headersSent) {
+          (res as any).status(502).send('Bad Gateway');
+        }
+      }
+    }
+  }));
+
+  // Proxy /api-sports to https://v3.football.api-sports.io
+  app.use(createProxyMiddleware({
+    target: 'https://v3.football.api-sports.io',
+    changeOrigin: true,
+    pathFilter: '/api-sports',
+    pathRewrite: {
+      '^/api-sports': '',
+    },
+    on: {
+      proxyReq: (proxyReq, req, res) => {
+        proxyReq.setHeader('x-apisports-key', process.env.API_SPORTS_KEY || '');
+      },
+      error: (err, req, res) => {
+        console.error('Proxy error (/api-sports):', err);
+        if ('headersSent' in res && !res.headersSent) {
+          (res as any).status(502).send('Bad Gateway');
+        }
+      }
+    }
+  }));
+
+  // Proxy /img to https://sports.bzzoiro.com/img
+  app.use(createProxyMiddleware({
+    target: 'https://sports.bzzoiro.com',
+    changeOrigin: true,
+    pathFilter: '/img',
+    on: {
+      proxyReq: (proxyReq, req, res) => {
+        if (!req.headers.authorization) {
+          proxyReq.setHeader('Authorization', `Token ${process.env.SPORTSBZZOIRO_API_KEY}`);
+        }
+      },
+      error: (err, req, res) => {
+        console.error('Proxy error (/img):', err);
+        if ('headersSent' in res && !res.headersSent) {
+          (res as any).status(502).send('Bad Gateway');
+        }
+      }
+    }
+  }));
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    const distPath = path.join(__dirname, 'dist');
+    app.use(express.static(distPath));
+    app.get('*', (req, res) => {
+      res.sendFile(path.join(distPath, 'index.html'));
+    });
+  }
+
+  app.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
