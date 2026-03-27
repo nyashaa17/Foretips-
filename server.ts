@@ -26,6 +26,14 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
+  app.get('/health', (req, res) => {
+    res.status(200).json({
+      status: "OK",
+      uptime: process.uptime(),
+      timestamp: Date.now()
+    });
+  });
+
   // Proxy /api to https://sports.bzzoiro.com/api
   app.use(createProxyMiddleware({
     target: 'https://sports.bzzoiro.com',
