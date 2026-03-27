@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
+import { Link } from 'react-router-dom';
 
 export default function LeagueStandings({ leagueName, countryName }) {
   const [standings, setStandings] = useState([]);
@@ -15,42 +16,43 @@ export default function LeagueStandings({ leagueName, countryName }) {
         setLoading(true);
         setError(null);
 
-        const headers = {
-          'X-Auth-Token': '51a8a6b9ed214f5dbc1be28a6733f5af'
+        const espnLeagueMap = {
+          'premier league': 'eng.1',
+          'championship': 'eng.2',
+          'la liga': 'esp.1',
+          'serie a': 'ita.1',
+          'bundesliga': 'ger.1',
+          'ligue 1': 'fra.1',
+          'eredivisie': 'ned.1',
+          'primeira liga': 'por.1',
+          'liga portugal betclic': 'por.1',
+          'champions league': 'uefa.champions',
+          'europa league': 'uefa.europa',
+          'mls': 'usa.1',
+          'brasileirão serie a': 'bra.1',
+          'liga mx apertura': 'mex.1',
+          'liga mx clausura': 'mex.1',
+          'pro league': 'bel.1',
+          'scottish premiership': 'sco.1',
+          'super league': 'sui.1',
+          'trendyol super lig': 'tur.1',
+          'saudi pro league': 'ksa.1',
+          'allsvenskan': 'swe.1',
+          'superliga': 'rou.1',
+          'stoiximan super league': 'gre.1',
+          'nigeria premier football league': 'nga.1',
+          'africa cup of nations 2025': 'caf.nations',
+          'caf champions league': 'caf.champions',
+          'world cup 2026': 'fifa.world'
         };
 
-        // 1. Search for the league to get its ID
-        const searchRes = await fetch(`/football-api/competitions`);
-        if (!searchRes.ok) {
-          throw new Error('API request failed. Please try again later.');
-        }
-        const searchData = await searchRes.json();
-        console.log('Search data:', searchData);
+        const leagueCode = espnLeagueMap[leagueName.toLowerCase()];
 
-        // Try to match by name
-        let matchedLeague = searchData.competitions.find(
-          l => l.name.toLowerCase() === leagueName.toLowerCase() || 
-               l.code.toLowerCase() === leagueName.toLowerCase()
-        );
-
-        // If no exact match, try partial match
-        if (!matchedLeague) {
-          matchedLeague = searchData.competitions.find(
-            l => l.name.toLowerCase().includes(leagueName.toLowerCase())
-          );
-        }
-
-        if (!matchedLeague) {
+        if (!leagueCode) {
           throw new Error('Standings are not available for this league. Only major leagues are supported.');
         }
 
-        const leagueId = matchedLeague.id;
-        
-        if (matchedLeague.type === 'CUP') {
-          throw new Error(`${matchedLeague.name} is a cup competition and does not have traditional standings.`);
-        }
-        
-        const standingsRes = await fetch(`/football-api/competitions/${leagueId}/standings?season=2025`);
+        const standingsRes = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${leagueCode}/standings`);
         if (!standingsRes.ok) {
           const errorText = await standingsRes.text();
           console.error('Standings API error details:', errorText);
@@ -59,35 +61,34 @@ export default function LeagueStandings({ leagueName, countryName }) {
 
         const standingsData = await standingsRes.json();
         
-        if (!standingsData.standings || standingsData.standings.length === 0) {
+        const entries = standingsData.children?.[0]?.standings?.entries;
+        if (!entries || entries.length === 0) {
           throw new Error('Standings not available for this league.');
         }
 
-        // The response contains an array of standings (e.g. TOTAL, HOME, AWAY)
-        // We want the TOTAL standings
-        const totalStandings = standingsData.standings.find(s => s.type === 'TOTAL');
-        if (!totalStandings || !totalStandings.table) {
-          throw new Error('Total standings not available for this league.');
-        }
+        const getStat = (stats, name) => {
+          const stat = stats.find(s => s.name === name);
+          return stat ? stat.value : 0;
+        };
 
-        const formattedStandings = totalStandings.table.map(team => ({
-          rank: team.position,
+        const formattedStandings = entries.map(team => ({
+          rank: getStat(team.stats, 'rank'),
           team: {
             id: team.team.id,
-            name: team.team.shortName || team.team.name,
-            logo: team.team.crest
+            name: team.team.displayName || team.team.name,
+            logo: team.team.logos?.[0]?.href || ''
           },
-          points: team.points,
-          goalsDiff: team.goalDifference,
-          form: team.form,
+          points: getStat(team.stats, 'points'),
+          goalsDiff: getStat(team.stats, 'pointDifferential'),
+          form: '', // ESPN API doesn't provide form directly in this endpoint
           all: {
-            played: team.playedGames,
-            win: team.won,
-            draw: team.draw,
-            lose: team.lost,
+            played: getStat(team.stats, 'gamesPlayed'),
+            win: getStat(team.stats, 'wins'),
+            draw: getStat(team.stats, 'ties'),
+            lose: getStat(team.stats, 'losses'),
             goals: {
-              for: team.goalsFor,
-              against: team.goalsAgainst
+              for: getStat(team.stats, 'pointsFor'),
+              against: getStat(team.stats, 'pointsAgainst')
             }
           }
         }));
@@ -172,8 +173,8 @@ export default function LeagueStandings({ leagueName, countryName }) {
                 </td>
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
-                    <img src={team.team.logo} alt={team.team.name} className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />
-                    <span className="font-semibold text-slate-900">{team.team.name}</span>
+                    {team.team.logo && <img src={team.team.logo} alt={team.team.name} className="w-6 h-6 object-contain" referrerPolicy="no-referrer" />}
+                    <Link to={`/team/${team.team.id}`} className="font-semibold text-slate-900 hover:text-blue-600 transition-colors">{team.team.name}</Link>
                   </div>
                 </td>
                 <td className="px-4 py-3 text-center text-slate-600">{team.all.played}</td>

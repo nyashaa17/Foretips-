@@ -19,25 +19,28 @@ export default function Predictions() {
   const [filterType, setFilterType] = useState('all'); // 'all', 'high_confidence'
   const [searchQuery, setSearchQuery] = useState(''); // Search by team name
 
-  useEffect(() => {
-    const fetchPredictions = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const preds = await getPredictions();
-        setPredictions(preds);
-      } catch (err) {
-        setError('Failed to load predictions.');
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchPredictions = async (forceRefresh = false) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      // Fetch more predictions to ensure we get all of them, including upcoming matches
+      const preds = await getPredictions({ upcoming: true }, forceRefresh);
+      setPredictions(preds || []);
+    } catch (err) {
+      setError('Failed to load predictions.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchPredictions();
   }, []);
 
   const processedPredictions = useMemo(() => {
+    if (!Array.isArray(predictions)) return [];
     let result = [...predictions];
 
     // Apply Search Filter
@@ -78,9 +81,9 @@ export default function Predictions() {
       
       <Breadcrumbs />
 
-      <div className="text-center mb-10">
+      <div className="text-center mb-10 relative">
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-2 uppercase tracking-tight">Match Predictions</h1>
-        <div className="w-20 h-1.5 bg-green-500 mx-auto rounded-full"></div>
+        <div className="w-20 h-1.5 bg-green-500 mx-auto rounded-full mb-4"></div>
       </div>
 
       {/* Professional Controls */}

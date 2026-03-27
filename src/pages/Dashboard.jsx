@@ -360,7 +360,7 @@ export default function Dashboard() {
                       {details.homeTeam && details.awayTeam ? (
                         <div className="flex items-center gap-3 mb-2 min-w-0">
                           <div className="flex items-center gap-2 w-full min-w-0">
-                            {details.homeTeamBadge ? (
+                            {details.homeTeamBadge && details.homeTeamBadge.trim() !== "" ? (
                               <img src={details.homeTeamBadge} alt={details.homeTeam} className="w-6 h-6 object-contain shrink-0" referrerPolicy="no-referrer" />
                             ) : (
                               <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-[10px] border border-slate-200 shrink-0">
@@ -370,7 +370,7 @@ export default function Dashboard() {
                             <span className="font-bold text-slate-900 text-sm truncate">{details.homeTeam}</span>
                             <span className="text-xs font-black text-slate-300 mx-1 shrink-0">v</span>
                             <span className="font-bold text-slate-900 text-sm truncate">{details.awayTeam}</span>
-                            {details.awayTeamBadge ? (
+                            {details.awayTeamBadge && details.awayTeamBadge.trim() !== "" ? (
                               <img src={details.awayTeamBadge} alt={details.awayTeam} className="w-6 h-6 object-contain shrink-0" referrerPolicy="no-referrer" />
                             ) : (
                               <div className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-[10px] border border-slate-200 shrink-0">

@@ -2,15 +2,9 @@ import { subHours, isAfter } from 'date-fns';
 import { supabase } from '../supabaseClient';
 
 const API_BASE_URL = '/api';
-const API_KEY = '547990004a7c3d23bd07d54928c11d0fdaf36610';
-
-const headers = {
-  'Authorization': `Token ${API_KEY}`,
-  'Content-Type': 'application/json',
-};
 
 // Helper to fetch from API with Supabase caching
-async function fetchFromApi(endpoint, cacheKey = null, retries = 2) {
+async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh = false) {
   const normalizePrediction = (p) => {
     if (!p || !p.most_likely_score) return p;
     
@@ -96,7 +90,7 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2) {
   };
 
   // 1. Try to get from Supabase Cache first
-  if (cacheKey && supabase) {
+  if (cacheKey && supabase && !forceRefresh) {
     try {
       const cachePromise = supabase
         .from('api_cache')
@@ -134,7 +128,9 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2) {
 
     try {
       const response = await fetch(url, { 
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
         signal: controller.signal
       });
       clearTimeout(timeoutId);
@@ -143,37 +139,49 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2) {
         if (response.status === 429) {
           const retryAfter = response.headers.get('Retry-After');
           const delay = retryAfter ? parseInt(retryAfter) * 1000 : Math.pow(2, i) * 2000;
-          console.warn(`API Rate limited (429). Retrying in ${delay}ms...`);
+          console.warn(`[fetchFromApi] API Rate limited (429). Retrying in ${delay}ms...`);
           await new Promise(resolve => setTimeout(resolve, delay));
           continue; // Retry
         }
         if (response.status === 404) {
-          console.warn(`API endpoint not found: ${url}`);
+          console.error(`[fetchFromApi] API endpoint not found (404): ${url}. If you deployed to Vercel/Netlify, your proxy server (server.ts) might not be running!`);
           return null; // Return null for 404 errors
         }
         if (response.status === 401 || response.status === 403) {
+          console.error(`[fetchFromApi] API Authentication failed (${response.status}). Please check your API key for ${url}`);
           throw new Error('API Authentication failed. Please check your API key.');
         }
+        
+        // Log other errors robustly
+        const errorText = await response.text().catch(() => 'No error text');
+        console.error(`[fetchFromApi] API error: ${response.status} ${response.statusText}`, errorText);
         throw new Error(`API error: ${response.status} ${response.statusText}`);
       }
       
       const data = await response.json();
       
       let finalData;
+      let hasPagination = false;
+      let nextUrl = null;
+
       if (data && data.results) {
         finalData = data.results.map(normalizePrediction);
+        hasPagination = true;
+        nextUrl = data.next;
       } else if (Array.isArray(data)) {
         finalData = data.map(normalizePrediction);
       } else {
         finalData = normalizePrediction(data);
       }
 
+      const resultToCache = hasPagination ? { results: finalData, next: nextUrl } : finalData;
+
       // 2. Save to Supabase Cache
-      if (cacheKey && supabase && finalData) {
+      if (cacheKey && supabase && resultToCache) {
         try {
           await supabase.from('api_cache').upsert({
             key: cacheKey,
-            data: JSON.stringify(finalData),
+            data: JSON.stringify(resultToCache),
             created_at: new Date().toISOString()
           }, { onConflict: 'key' });
         } catch (e) {
@@ -181,7 +189,7 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2) {
         }
       }
 
-      return finalData;
+      return resultToCache;
     } catch (error) {
       clearTimeout(timeoutId);
       
@@ -209,7 +217,29 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2) {
 }
 
 
-export const getPredictions = async (params = {}) => {
+// Sync predictions to Supabase
+const syncPredictionsToSupabase = async (predictions) => {
+  if (!supabase) return;
+  
+  // Upsert predictions into the 'predictions' table
+  const { error } = await supabase
+    .from('predictions')
+    .upsert(predictions.map(p => ({
+      id: p.id,
+      match_id: p.match_id || p.id,
+      home_team: p.home_team || (p.event ? p.event.home_team : null),
+      away_team: p.away_team || (p.event ? p.event.away_team : null),
+      prediction_data: p,
+      updated_at: new Date().toISOString()
+    })));
+    
+  if (error) console.error('Error syncing predictions to Supabase:', error);
+};
+
+export const getPredictions = async (params = {}, forceRefresh = false) => {
+  console.log(`[getPredictions] Called with params:`, params, `forceRefresh:`, forceRefresh);
+  
+  // If no data in Supabase, data is stale, or forceRefresh is true, fetch from API
   const sortedParams = Object.keys(params).sort().reduce((acc, key) => {
     acc[key] = params[key];
     return acc;
@@ -219,10 +249,55 @@ export const getPredictions = async (params = {}) => {
   const endpoint = `/predictions${query ? `?${query}` : ''}`;
   const cacheKey = `preds_${query || 'all'}`;
   
-  return fetchFromApi(endpoint, cacheKey);
+  console.log(`[getPredictions] Fetching from API endpoint: ${endpoint}`);
+  
+  try {
+    let result = await fetchFromApi(endpoint, cacheKey, 2, forceRefresh);
+    console.log('[getPredictions] API result:', result);
+    let allResults = [];
+    
+    if (result && result.results) {
+      allResults = [...result.results];
+      let nextUrl = result.next;
+      
+      // Loop to fetch all pages
+      let pageCount = 0;
+      while (nextUrl && pageCount < 20) {
+        pageCount++;
+        console.log(`[getPredictions] Fetching page ${pageCount + 1}...`);
+        // Extract the query string from the nextUrl
+        const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
+        const nextEndpoint = `/predictions${nextQuery ? `?${nextQuery}` : ''}`;
+        const nextCacheKey = `preds_${nextQuery || 'page'}`;
+        
+        const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey, 2, forceRefresh);
+        if (nextResult && nextResult.results) {
+          allResults = [...allResults, ...nextResult.results];
+          if (nextResult.next === nextUrl) {
+            console.warn('[getPredictions] API returned same next URL, breaking loop to prevent infinite loop');
+            break;
+          }
+          nextUrl = nextResult.next;
+        } else {
+          nextUrl = null;
+        }
+      }
+      
+      console.log(`[getPredictions] Successfully fetched ${allResults.length} predictions from API. Syncing to Supabase...`);
+      // Sync to Supabase
+      await syncPredictionsToSupabase(allResults);
+      return allResults;
+    }
+    
+    console.log(`[getPredictions] API returned non-paginated result or empty results.`);
+    return result;
+  } catch (err) {
+    console.error(`[getPredictions] Fatal error fetching predictions from API:`, err);
+    throw err;
+  }
 };
 
-export const getEvents = async (params = {}) => {
+export const getEvents = async (params = {}, forceRefresh = false) => {
   const sortedParams = Object.keys(params).sort().reduce((acc, key) => {
     acc[key] = params[key];
     return acc;
@@ -232,15 +307,95 @@ export const getEvents = async (params = {}) => {
   const endpoint = `/events${query ? `?${query}` : ''}`;
   const cacheKey = `events_${query || 'all'}`;
   
-  return fetchFromApi(endpoint, cacheKey);
+  let result = await fetchFromApi(endpoint, cacheKey, 2, forceRefresh);
+  let allResults = [];
+  
+  if (result && result.results) {
+    allResults = [...result.results];
+    let nextUrl = result.next;
+    
+    // Loop to fetch all pages
+    let pageCount = 0;
+    while (nextUrl && pageCount < 20) {
+      pageCount++;
+      // Extract the query string from the nextUrl
+      const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
+      const nextEndpoint = `/events${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextCacheKey = `events_${nextQuery || 'page'}`;
+      
+      const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey, 2, forceRefresh);
+      if (nextResult && nextResult.results) {
+        allResults = [...allResults, ...nextResult.results];
+        if (nextResult.next === nextUrl) break;
+        nextUrl = nextResult.next;
+      } else {
+        nextUrl = null;
+      }
+    }
+    return allResults;
+  }
+  
+  return result;
 };
 
 export const getLiveMatches = async () => {
-  return fetchFromApi('/live', 'live_matches');
+  let result = await fetchFromApi('/live', 'live_matches');
+  let allResults = [];
+  
+  if (result && result.results) {
+    allResults = [...result.results];
+    let nextUrl = result.next;
+    
+    let pageCount = 0;
+    while (nextUrl && pageCount < 20) {
+      pageCount++;
+      const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
+      const nextEndpoint = `/live${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextCacheKey = `live_matches_${nextQuery || 'page'}`;
+      
+      const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey);
+      if (nextResult && nextResult.results) {
+        allResults = [...allResults, ...nextResult.results];
+        if (nextResult.next === nextUrl) break;
+        nextUrl = nextResult.next;
+      } else {
+        nextUrl = null;
+      }
+    }
+    return allResults;
+  }
+  
+  return result;
 };
 
 export const getLeagues = async () => {
-  return fetchFromApi('/leagues', 'leagues_list');
+  let result = await fetchFromApi('/leagues', 'leagues_list');
+  let allResults = [];
+  
+  if (result && result.results) {
+    allResults = [...result.results];
+    let nextUrl = result.next;
+    
+    let pageCount = 0;
+    while (nextUrl && pageCount < 20) {
+      pageCount++;
+      const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
+      const nextEndpoint = `/leagues${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextCacheKey = `leagues_list_${nextQuery || 'page'}`;
+      
+      const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey);
+      if (nextResult && nextResult.results) {
+        allResults = [...allResults, ...nextResult.results];
+        if (nextResult.next === nextUrl) break;
+        nextUrl = nextResult.next;
+      } else {
+        nextUrl = null;
+      }
+    }
+    return allResults;
+  }
+  
+  return result;
 };
 
 export const getMatchDetails = async (id) => {

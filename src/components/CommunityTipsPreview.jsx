@@ -105,7 +105,7 @@ export default function CommunityTipsPreview() {
                     {details.homeTeam && details.awayTeam ? (
                       <div className="flex items-center justify-between mb-3">
                         <div className="flex flex-col items-center gap-2 w-2/5">
-                          {details.homeTeamBadge ? (
+                          {details.homeTeamBadge && details.homeTeamBadge.trim() !== "" ? (
                             <img src={details.homeTeamBadge} alt={details.homeTeam} className="w-10 h-10 object-contain" referrerPolicy="no-referrer" />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs border border-slate-200">
@@ -118,7 +118,7 @@ export default function CommunityTipsPreview() {
                           <span className="text-xs font-black text-slate-300 bg-slate-50 px-2 py-1 rounded-md">VS</span>
                         </div>
                         <div className="flex flex-col items-center gap-2 w-2/5">
-                          {details.awayTeamBadge ? (
+                          {details.awayTeamBadge && details.awayTeamBadge.trim() !== "" ? (
                             <img src={details.awayTeamBadge} alt={details.awayTeam} className="w-10 h-10 object-contain" referrerPolicy="no-referrer" />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 font-bold text-xs border border-slate-200">

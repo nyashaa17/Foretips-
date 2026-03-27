@@ -5,6 +5,7 @@ import PredictionCard from '../components/PredictionCard';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import CommunityTipsPreview from '../components/CommunityTipsPreview';
 import LeaderboardPreview from '../components/LeaderboardPreview';
+import News from '../components/News';
 import MatchPollCarousel from '../components/MatchPollCarousel';
 import { TrendingUp, Activity, ChevronRight, Star, Calendar, Trophy, MessageCircle, Zap, Users, Medal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -17,14 +18,12 @@ import { AdPlacement } from '../components/AdPlacement';
 export default function Home() {
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(1);
   const [error, setError] = useState(null);
   const [sortBy, setSortBy] = useState('date'); // 'date', 'confidence'
   const [filterType, setFilterType] = useState('all'); // 'all', 'high_confidence'
 
   const processedPredictions = useMemo(() => {
+    if (!Array.isArray(predictions)) return [];
     let result = [...predictions];
 
     // Apply Filter
@@ -42,44 +41,29 @@ export default function Home() {
     return result;
   }, [predictions, sortBy, filterType]);
 
-  const loadPredictions = async (currentPage, isInitial = false) => {
+  const loadPredictions = async () => {
     try {
-      if (isInitial) setLoading(true);
-      else setLoadingMore(true);
+      setLoading(true);
       setError(null);
 
-      console.log('Loading predictions for page:', currentPage);
+      const today = new Date().toISOString().split('T')[0];
       const preds = await getPredictions({ 
-        limit: 10,
-        offset: (currentPage - 1) * 10,
+        upcoming: true
       });
       console.log('Predictions loaded:', preds);
       
-      if (isInitial) {
-        setPredictions(preds);
-      } else {
-        setPredictions(prev => [...prev, ...preds]);
-      }
-      setHasMore(preds.length === 10);
+      setPredictions(preds || []);
     } catch (err) {
       setError(err.message || 'Failed to load data. Please try again later.');
       console.error('Error loading predictions:', err);
     } finally {
       setLoading(false);
-      setLoadingMore(false);
     }
   };
 
   useEffect(() => {
-    setPage(1);
-    loadPredictions(1, true);
+    loadPredictions();
   }, []);
-
-  const handleLoadMore = () => {
-    const nextPage = page + 1;
-    setPage(nextPage);
-    loadPredictions(nextPage, false);
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
@@ -265,34 +249,13 @@ export default function Home() {
               )}
             </div>
             
-            {!loading && predictions.length > 0 && hasMore && (
-              <div className="mt-8 flex justify-center">
-                <button
-                  onClick={handleLoadMore}
-                  disabled={loadingMore}
-                  className="group flex items-center gap-2 px-8 py-4 bg-slate-900 text-white rounded-2xl font-bold hover:bg-slate-800 transition-all hover:scale-105 active:scale-95 shadow-xl shadow-slate-200"
-                >
-                  {loadingMore ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                      Loading...
-                    </>
-                  ) : (
-                    <>
-                      View More Predictions
-                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
           </>
         )}
       </section>
 
       <CommunityTipsPreview />
       <LeaderboardPreview />
-
+      <News />
     </div>
   );
 }

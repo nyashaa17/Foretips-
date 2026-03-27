@@ -68,8 +68,8 @@ export default function LiveScores() {
           {loading && matches.length === 0 ? (
             Array.from({ length: 6 }).map((_, i) => <MatchSkeleton key={i} />)
           ) : matches.length > 0 ? (
-            matches.map((match, index) => (
-              <LiveMatchCard key={`${match.id}-${index}`} match={match} />
+            matches.map((match) => (
+              <LiveMatchCard key={match.id} match={match} />
             ))
           ) : (
             <div className="col-span-full bg-white rounded-xl p-12 text-center border border-slate-200 shadow-sm">

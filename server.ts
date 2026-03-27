@@ -1,3 +1,4 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import { createProxyMiddleware } from "http-proxy-middleware";
@@ -13,7 +14,9 @@ async function startServer() {
 
   // Configure CORS for your frontend domain
   app.use(cors({
-    origin: 'https://foretips.co.zw',
+    origin: function (origin, callback) {
+      callback(null, true);
+    },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     credentials: true,
   }));
@@ -31,7 +34,8 @@ async function startServer() {
     on: {
       proxyReq: (proxyReq, req, res) => {
         if (!req.headers.authorization) {
-          proxyReq.setHeader('Authorization', `Token ${process.env.SPORTSBZZOIRO_API_KEY}`);
+          const apiKey = process.env.SPORTSBZZOIRO_API_KEY || '';
+          proxyReq.setHeader('Authorization', `Token ${apiKey}`);
         }
       },
       error: (err, req, res) => {
@@ -82,27 +86,6 @@ async function startServer() {
     }
   }));
 
-  // Proxy /api-sports to https://v3.football.api-sports.io
-  app.use(createProxyMiddleware({
-    target: 'https://v3.football.api-sports.io',
-    changeOrigin: true,
-    pathFilter: '/api-sports',
-    pathRewrite: {
-      '^/api-sports': '',
-    },
-    on: {
-      proxyReq: (proxyReq, req, res) => {
-        proxyReq.setHeader('x-apisports-key', process.env.API_SPORTS_KEY || '');
-      },
-      error: (err, req, res) => {
-        console.error('Proxy error (/api-sports):', err);
-        if ('headersSent' in res && !res.headersSent) {
-          (res as any).status(502).send('Bad Gateway');
-        }
-      }
-    }
-  }));
-
   // Proxy /img to https://sports.bzzoiro.com/img
   app.use(createProxyMiddleware({
     target: 'https://sports.bzzoiro.com',
@@ -111,7 +94,8 @@ async function startServer() {
     on: {
       proxyReq: (proxyReq, req, res) => {
         if (!req.headers.authorization) {
-          proxyReq.setHeader('Authorization', `Token ${process.env.SPORTSBZZOIRO_API_KEY}`);
+          const apiKey = process.env.SPORTSBZZOIRO_API_KEY || '';
+          proxyReq.setHeader('Authorization', `Token ${apiKey}`);
         }
       },
       error: (err, req, res) => {

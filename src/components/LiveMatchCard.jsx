@@ -1,11 +1,41 @@
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Activity } from 'lucide-react';
 import { getPreviewUrl } from '../utils/image';
-import { getTeamLogoUrl, getLeagueLogoUrl } from '../services/api';
+import { getTeamLogoUrl, getLeagueLogoUrl, getEvents } from '../services/api';
 import SmartLogo from './SmartLogo';
 
 export default function LiveMatchCard({ match }) {
   const { id, home_score, away_score, current_minute, live_stats } = match;
+  const [events, setEvents] = useState(match.events || []);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchMatchEvents = async () => {
+      try {
+        setLoadingEvents(true);
+        const eventsData = await getEvents({ match_id: id }, true);
+        if (isMounted && eventsData && Array.isArray(eventsData)) {
+          setEvents(eventsData);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch events for match', id, err);
+      } finally {
+        if (isMounted) setLoadingEvents(false);
+      }
+    };
+
+    fetchMatchEvents();
+    
+    // Fetch every 60 seconds to keep events updated
+    const interval = setInterval(fetchMatchEvents, 60000);
+
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, [id]);
   
   // Safely extract league
   const league = typeof match.league === 'string' 
@@ -103,14 +133,28 @@ export default function LiveMatchCard({ match }) {
             </div>
           </div>
         )}
-        {match.events && (
+        {events && events.length > 0 && (
           <div className="mt-4 pt-4 border-t border-slate-100 text-xs text-slate-600">
-            <h4 className="font-bold mb-1">Recent Events</h4>
-            {match.events.slice(-2).map((event, index) => (
-              <div key={index}>
-                {event.time}' {event.type} {event.player}
-              </div>
-            ))}
+            <div className="flex items-center justify-between mb-2">
+              <h4 className="font-bold uppercase tracking-wider text-[10px] text-slate-400">Recent Events</h4>
+              {loadingEvents && <span className="text-[10px] text-slate-400 animate-pulse">Updating...</span>}
+            </div>
+            <div className="space-y-1.5">
+              {events.slice(-3).reverse().map((event, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <span className="font-mono font-medium text-slate-900 w-6">{event.time}'</span>
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                    event.type?.toLowerCase().includes('goal') ? 'bg-green-100 text-green-700' :
+                    event.type?.toLowerCase().includes('card') ? 'bg-red-100 text-red-700' :
+                    'bg-slate-100 text-slate-600'
+                  }`}>
+                    {event.type}
+                  </span>
+                  <span className="truncate flex-1 font-medium" title={event.player}>{event.player}</span>
+                  {event.team && <span className="text-[10px] text-slate-400 truncate max-w-[80px]">{event.team}</span>}
+                </div>
+              ))}
+            </div>
           </div>
         )}
       </div>

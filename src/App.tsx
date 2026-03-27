@@ -13,6 +13,8 @@ import Predictions from './pages/Predictions';
 import LiveScores from './pages/LiveScores';
 import Leagues from './pages/Leagues';
 import MatchDetails from './pages/MatchDetails';
+import TeamDetails from './pages/TeamDetails';
+import PlayerDetails from './pages/PlayerDetails';
 import LeaguePredictions from './pages/LeaguePredictions';
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
@@ -46,6 +48,8 @@ export default function App() {
             <Route path="/about" element={<About />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/team/:teamId" element={<TeamDetails />} />
+            <Route path="/player/:playerId" element={<PlayerDetails />} />
             <Route path="/match/:id" element={<MatchDetails />} />
             <Route path="/signin" element={<SignIn />} />
             <Route path="/signup" element={<SignUp />} />
