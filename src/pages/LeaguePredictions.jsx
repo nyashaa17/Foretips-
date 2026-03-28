@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { getLeagues } from '../services/api';
 import LeagueStandings from '../components/LeagueStandings';
+import NotFound from './NotFound';
 import { ChevronLeft, Trophy, List } from 'lucide-react';
 
 export default function LeaguePredictions() {
@@ -38,6 +39,10 @@ export default function LeaguePredictions() {
     fetchLeagueData();
   }, [leagueSlug]);
 
+  if (error) {
+    return <NotFound />;
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Link to="/leagues" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors">
@@ -59,11 +64,7 @@ export default function LeaguePredictions() {
         </div>
       </div>
 
-      {error ? (
-        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-          <p className="text-red-600">{error}</p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="text-center py-12">Loading standings...</div>
       ) : leagueInfo && (
         <LeagueStandings leagueName={leagueInfo.name} countryName={leagueInfo.country} />

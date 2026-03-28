@@ -9,6 +9,7 @@ import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabaseClient';
 import { AdPlacement } from '../components/AdPlacement';
 import ReactMarkdown from 'react-markdown';
+import NotFound from './NotFound';
 
 import SmartLogo from '../components/SmartLogo';
 
@@ -190,12 +191,7 @@ export default function MatchDetails() {
   }
 
   if (error || !match) {
-    return (
-      <div className="max-w-4xl mx-auto px-4 py-12 text-center">
-        <p className="text-red-400 mb-4">{error || 'Match not found'}</p>
-        <button onClick={handleBack} className="text-green-500 hover:text-green-400 underline">Back to Predictions</button>
-      </div>
-    );
+    return <NotFound />;
   }
 
   const event = match.event || match;

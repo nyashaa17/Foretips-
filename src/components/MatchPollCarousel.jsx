@@ -82,26 +82,54 @@ export default function MatchPollCarousel() {
     const matchId = matches[currentIndex].id;
 
     // 1. Fetch aggregated results
-    const { data: results, error: resultsError } = await supabase
-      .from('match_poll_results')
-      .select('*')
-      .eq('match_id', matchId)
-      .maybeSingle();
+    let results = null;
+    let resultsError = null;
+    try {
+      const res = await supabase
+        .from('match_poll_results')
+        .select('*')
+        .eq('match_id', matchId)
+        .maybeSingle();
+      results = res.data;
+      resultsError = res.error;
+    } catch (err) {
+      resultsError = err;
+    }
     
-    if (resultsError) console.error(`Error fetching results: ${resultsError.message}`);
+    if (resultsError) {
+      const errorMsg = resultsError.message || String(resultsError);
+      if (errorMsg.includes('Failed to fetch')) {
+        console.warn('Supabase connection failed. Using local state for polls.');
+      } else {
+        console.error(`Error fetching results: ${errorMsg}`);
+      }
+    }
     
     setPollResults(results || { total_votes: 0, home_pct: 0, draw_pct: 0, away_pct: 0 });
 
     // 2. Fetch current user's vote
     if (user) {
-      const { data: voteData, error: voteError } = await supabase
-        .from('match_polls')
-        .select('vote')
-        .eq('match_id', matchId)
-        .eq('user_id', user.id)
-        .maybeSingle();
+      let voteData = null;
+      let voteError = null;
+      try {
+        const res = await supabase
+          .from('match_polls')
+          .select('vote')
+          .eq('match_id', matchId)
+          .eq('user_id', user.id)
+          .maybeSingle();
+        voteData = res.data;
+        voteError = res.error;
+      } catch (err) {
+        voteError = err;
+      }
         
-      if (voteError) console.error(`Error fetching user vote: ${voteError.message}`);
+      if (voteError) {
+        const errorMsg = voteError.message || String(voteError);
+        if (!errorMsg.includes('Failed to fetch')) {
+          console.error(`Error fetching user vote: ${errorMsg}`);
+        }
+      }
       
       const localVote = localStorage.getItem(`vote_${matchId}`);
       setUserVote(voteData?.vote || localVote || null);
@@ -220,8 +248,9 @@ export default function MatchPollCarousel() {
     }
 
     if (error) {
-      if (error.message.includes('row-level security')) {
-        setDebugInfo('RLS Error: Vote saved locally. Please configure Supabase RLS.');
+      const errorMsg = error.message || String(error);
+      if (errorMsg.includes('row-level security') || errorMsg.includes('Failed to fetch')) {
+        setDebugInfo(errorMsg.includes('Failed to fetch') ? 'Connection Error: Vote saved locally.' : 'RLS Error: Vote saved locally. Please configure Supabase RLS.');
         // Fallback to local storage so the user can see it working
         localStorage.setItem(`vote_${matchId}`, vote);
         setUserVote(vote);
@@ -248,9 +277,13 @@ export default function MatchPollCarousel() {
           };
         });
         
-        alert('Vote saved locally! To save permanently, you must configure Row Level Security (RLS) in your Supabase dashboard.');
+        if (errorMsg.includes('Failed to fetch')) {
+          alert('Vote saved locally! We could not connect to the database. Please check your internet connection or Supabase configuration.');
+        } else {
+          alert('Vote saved locally! To save permanently, you must configure Row Level Security (RLS) in your Supabase dashboard.');
+        }
       } else {
-        alert('Error voting: ' + error.message);
+        alert('Error voting: ' + errorMsg);
       }
     } else {
       setUserVote(vote);
@@ -283,92 +316,74 @@ export default function MatchPollCarousel() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              className="bg-gradient-to-br from-emerald-50/80 to-teal-50/50 p-8 rounded-3xl border border-emerald-100 shadow-sm text-slate-900 relative overflow-hidden"
+              className="bg-[#1e293b] p-8 rounded-[2rem] shadow-xl text-white relative overflow-hidden"
             >
-              <button onClick={prev} className="absolute left-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm border border-emerald-100"><ChevronLeft className="w-5 h-5" /></button>
-              <button onClick={next} className="absolute right-2 top-1/2 -translate-y-1/2 z-10 p-2 bg-white/80 backdrop-blur-sm rounded-full text-emerald-600 hover:bg-emerald-50 transition-all shadow-sm border border-emerald-100"><ChevronRight className="w-5 h-5" /></button>
+              <button onClick={prev} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full text-slate-900 hover:bg-slate-100 transition-all shadow-lg"><ChevronLeft className="w-6 h-6" /></button>
+              <button onClick={next} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full text-slate-900 hover:bg-slate-100 transition-all shadow-lg"><ChevronRight className="w-6 h-6" /></button>
               
               {/* Header: Time and League */}
-              <div className="flex justify-center items-center gap-2 text-emerald-800/70 text-[10px] sm:text-xs font-bold uppercase tracking-widest mb-8 px-8 text-center">
-                <span>{match?.event?.event_date ? new Date(match.event.event_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : ''}</span>
-                <span className="text-emerald-300">•</span>
-                <span className="truncate">{match?.event?.league?.name || ''}</span>
+              <div className="flex justify-between items-center text-slate-400 text-sm sm:text-base font-medium mb-8 px-2">
+                <span>{match?.event?.event_date ? new Date(match.event.event_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '21:45'}</span>
+                <span className="truncate">{match?.event?.league?.name || 'Serie A'}</span>
               </div>
 
               {/* Matchup: Logos, Names, and Score */}
-              <div className="grid grid-cols-3 items-center gap-2 sm:gap-4 mb-10 px-4">
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-2xl p-2 sm:p-3 mb-3 flex items-center justify-center border border-emerald-100 shadow-sm">
+              <div className="flex justify-between items-center mb-10 px-4">
+                <div className="flex flex-col items-center text-center w-1/3">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 flex items-center justify-center">
                     <SmartLogo 
                       urls={homeLogos} 
                       alt={home_team?.name} 
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain drop-shadow-md"
                       fallbackText={home_team?.name || 'H'}
                     />
                   </div>
-                  <span className="font-bold text-xs sm:text-sm leading-tight text-slate-800">{home_team?.name}</span>
+                  <span className="font-bold text-sm sm:text-base leading-tight text-white">{home_team?.name}</span>
                 </div>
                 
-                <div className="flex flex-col items-center justify-center">
-                  <div className="text-3xl sm:text-4xl font-black tracking-tighter text-emerald-950">
-                    {match?.event?.home_score ?? 0} - {match?.event?.away_score ?? 0}
+                <div className="flex flex-col items-center justify-center w-1/3">
+                  <div className="text-4xl sm:text-5xl font-black text-white">
+                    -
                   </div>
-                  <div className="text-[10px] font-bold text-emerald-600/70 uppercase tracking-widest mt-2">Full Time</div>
                 </div>
 
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-14 h-14 sm:w-16 sm:h-16 bg-white rounded-2xl p-2 sm:p-3 mb-3 flex items-center justify-center border border-emerald-100 shadow-sm">
+                <div className="flex flex-col items-center text-center w-1/3">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 flex items-center justify-center">
                     <SmartLogo 
                       urls={awayLogos} 
                       alt={away_team?.name} 
-                      className="w-full h-full object-contain"
+                      className="w-full h-full object-contain drop-shadow-md"
                       fallbackText={away_team?.name || 'A'}
                     />
                   </div>
-                  <span className="font-bold text-xs sm:text-sm leading-tight text-slate-800">{away_team?.name}</span>
+                  <span className="font-bold text-sm sm:text-base leading-tight text-white">{away_team?.name}</span>
                 </div>
               </div>
 
               {/* Fan Votes */}
-              <div className="flex items-center justify-center gap-2 text-emerald-700/70 text-xs font-bold uppercase tracking-widest mb-6">
-                <Users className="w-3 h-3" />
+              <div className="flex items-center justify-center gap-2 text-slate-400 text-sm font-medium mb-6">
                 {totalVotes} Fans voted
               </div>
 
               {/* Percentage Bars */}
-              <div className="space-y-6 mb-8 px-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-[10px] font-black uppercase tracking-tighter">
-                    <span className="text-emerald-700">{homePercentage}%</span>
-                    <span className="text-slate-500">DRAW {drawPercentage}%</span>
-                    <span className="text-teal-700">{awayPercentage}%</span>
-                  </div>
-                  <div className="flex h-2.5 rounded-full overflow-hidden bg-white border border-emerald-100/50 shadow-inner">
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${homePercentage}%` }} className="bg-emerald-500" />
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${drawPercentage}%` }} className="bg-slate-300" />
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${awayPercentage}%` }} className="bg-teal-500" />
-                  </div>
+              <div className="space-y-4 mb-10 px-2">
+                <div className="flex justify-between text-sm font-bold text-white mb-2">
+                  <span>{home_team?.name} {homePercentage}%</span>
+                  <span>Draw {drawPercentage}%</span>
+                  <span>{away_team?.name} {awayPercentage}%</span>
+                </div>
+                <div className="flex h-3.5 rounded-full overflow-hidden bg-slate-700">
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${homePercentage}%` }} className="bg-[#e11d48]" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${drawPercentage}%` }} className="bg-[#64748b]" />
+                  <motion.div initial={{ width: 0 }} animate={{ width: `${awayPercentage}%` }} className="bg-[#0891b2]" />
                 </div>
               </div>
 
-              {/* ForeTips Expert View */}
-              {(match?.insight || match?.most_likely_score) && (
-                <div className="mb-8 px-6 py-4 bg-white/60 backdrop-blur-sm rounded-2xl border border-emerald-100/60 shadow-sm">
-                  <p className="text-[10px] font-bold text-emerald-800 uppercase tracking-widest mb-2 flex items-center gap-2">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                    ForeTips Expert View
-                  </p>
-                  <p className="text-sm text-emerald-950 leading-relaxed font-medium">
-                    {match.insight || `Predicted Score: ${match.most_likely_score}`}
-                  </p>
-                </div>
-              )}
-
               {/* Vote Buttons */}
-              <div className="flex justify-center gap-2 sm:gap-3 px-2">
-                <button onClick={() => handleVote('home')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-white border border-emerald-200 text-emerald-700 rounded-2xl font-bold text-xs sm:text-sm uppercase tracking-wider hover:bg-emerald-500 hover:text-white hover:border-emerald-500 hover:shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'home' ? 'bg-emerald-500 text-white border-emerald-500 shadow-md ring-2 ring-emerald-500 ring-offset-2 ring-offset-emerald-50' : ''}`}>Home</button>
-                <button onClick={() => handleVote('draw')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-white border border-slate-200 text-slate-700 rounded-2xl font-bold text-xs sm:text-sm uppercase tracking-wider hover:bg-slate-500 hover:text-white hover:border-slate-500 hover:shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'draw' ? 'bg-slate-500 text-white border-slate-500 shadow-md ring-2 ring-slate-500 ring-offset-2 ring-offset-emerald-50' : ''}`}>Draw</button>
-                <button onClick={() => handleVote('away')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-white border border-teal-200 text-teal-700 rounded-2xl font-bold text-xs sm:text-sm uppercase tracking-wider hover:bg-teal-500 hover:text-white hover:border-teal-500 hover:shadow-md transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'away' ? 'bg-teal-500 text-white border-teal-500 shadow-md ring-2 ring-teal-500 ring-offset-2 ring-offset-emerald-50' : ''}`}>Away</button>
+              <div className="flex justify-center gap-3 sm:gap-4 px-2">
+                <button onClick={() => handleVote('home')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-[#e11d48] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-rose-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'home' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Home</button>
+                <button onClick={() => handleVote('draw')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-[#64748b] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-slate-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'draw' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Draw</button>
+                <button onClick={() => handleVote('away')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-[#0891b2] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'away' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Away</button>
               </div>
 
             </motion.div>

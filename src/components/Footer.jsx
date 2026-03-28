@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Trophy, MessageCircle, ShieldAlert, Mail, Globe, Twitter, Instagram } from 'lucide-react';
+import { Trophy, MessageCircle, ShieldAlert, Mail, Globe, Twitter, Instagram, Activity } from 'lucide-react';
 import { AdPlacement } from './AdPlacement';
 
 export default function Footer() {
@@ -88,6 +88,12 @@ export default function Footer() {
                 <a href="mailto:support@foretips.com" className="hover:text-green-600 transition-colors flex items-center gap-2">
                   <Mail className="w-4 h-4" />
                   Contact Support
+                </a>
+              </li>
+              <li>
+                <a href="https://foretips.betteruptime.com/" target="_blank" rel="noopener noreferrer" className="hover:text-green-600 transition-colors flex items-center gap-2">
+                  <Activity className="w-4 h-4" />
+                  System Status
                 </a>
               </li>
             </ul>

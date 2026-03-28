@@ -189,8 +189,15 @@ export default function Dashboard() {
 
           setTips(prevTips => prevTips.filter(tip => tip.id !== id));
           hapticFeedback('medium');
+          setModal({ ...modal, isOpen: false });
         } catch (err) {
           console.error('Error deleting tip:', err);
+          setModal({
+            ...modal,
+            title: 'Error',
+            message: 'Failed to delete tip. Please try again later.',
+            onConfirm: () => setModal({ ...modal, isOpen: false })
+          });
         }
       }
     });

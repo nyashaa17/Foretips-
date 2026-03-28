@@ -30,6 +30,7 @@ import Dashboard from './pages/Dashboard';
 import UserProfile from './pages/UserProfile';
 import AdminRoute from './components/AdminRoute';
 import { AdManager } from './components/AdManager';
+import NotFound from './pages/NotFound';
 
 export default function App() {
   return (
@@ -68,6 +69,7 @@ export default function App() {
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/:leagueSlug" element={<LeaguePredictions />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </main>
         
