@@ -12,7 +12,10 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-2 group">
-              <img src="https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/Logo.png" alt="Foretips Logo" className="h-20 w-auto group-hover:scale-105 transition-transform" />
+              <div className="bg-green-500 p-1.5 rounded-xl group-hover:bg-green-600 transition-colors">
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
+              <span className="text-slate-900 font-bold text-2xl tracking-tight">Foretips</span>
             </Link>
             <p className="text-slate-500 text-sm leading-relaxed">
               Leading the way in data-driven football analysis. Our machine learning models process thousands of data points to bring you the most accurate match predictions and insights.

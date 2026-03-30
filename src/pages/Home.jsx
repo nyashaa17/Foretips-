@@ -1,12 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { getPredictions } from '../services/api';
 import PredictionCard from '../components/PredictionCard';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import CommunityTipsPreview from '../components/CommunityTipsPreview';
 import LeaderboardPreview from '../components/LeaderboardPreview';
-import News from '../components/News';
-import MatchPollCarousel from '../components/MatchPollCarousel';
+import LatestBlogs from '../components/LatestBlogs';
 import { TrendingUp, Activity, ChevronRight, Star, Calendar, Trophy, MessageCircle, Zap, Users, Medal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { hapticFeedback } from '../utils/haptics';
@@ -15,6 +14,8 @@ import clsx from 'clsx';
 import { MotionCard } from '../components/MotionCard';
 
 import { AdPlacement } from '../components/AdPlacement';
+
+const MatchPollCarousel = lazy(() => import('../components/MatchPollCarousel'));
 
 export default function Home() {
   const [predictions, setPredictions] = useState([]);
@@ -153,7 +154,9 @@ export default function Home() {
         </div>
       </motion.div>
       
-      <MatchPollCarousel />
+      <Suspense fallback={<div className="w-full max-w-xl mx-auto aspect-square bg-slate-100 animate-pulse rounded-[2rem] my-12"></div>}>
+        <MatchPollCarousel />
+      </Suspense>
 
       {/* Controls */}
       <div className="space-y-6">
@@ -256,7 +259,7 @@ export default function Home() {
 
       <CommunityTipsPreview />
       <LeaderboardPreview />
-      <News />
+      <LatestBlogs />
     </div>
   );
 }

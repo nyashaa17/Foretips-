@@ -4,17 +4,18 @@
  */
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Suspense, lazy } from 'react';
 import ScrollToTop from './components/ScrollToTop';
 import CookieConsent from './components/CookieConsent';
 import Layout from './components/Layout';
-import Home from './pages/Home';
-import Predictions from './pages/Predictions';
-import LiveScores from './pages/LiveScores';
-import Leagues from './pages/Leagues';
-import MatchDetails from './pages/MatchDetails';
+const Home = lazy(() => import('./pages/Home'));
+const Predictions = lazy(() => import('./pages/Predictions'));
+const LiveScores = lazy(() => import('./pages/LiveScores'));
+const Leagues = lazy(() => import('./pages/Leagues'));
+const MatchDetails = lazy(() => import('./pages/MatchDetails'));
 import TeamDetails from './pages/TeamDetails';
 import PlayerDetails from './pages/PlayerDetails';
-import LeaguePredictions from './pages/LeaguePredictions';
+const LeaguePredictions = lazy(() => import('./pages/LeaguePredictions'));
 import Blog from './pages/Blog';
 import BlogPost from './pages/BlogPost';
 import About from './pages/About';
@@ -25,7 +26,7 @@ import SignUp from './pages/SignUp';
 import SubmitTip from './pages/SubmitTip';
 import Leaderboard from './pages/Leaderboard';
 import AdminDashboard from './pages/AdminDashboard';
-import Dashboard from './pages/Dashboard';
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 import UserProfile from './pages/UserProfile';
 import AdminRoute from './components/AdminRoute';
 import { AdManager } from './components/AdManager';
@@ -36,40 +37,42 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-green-500/30 selection:text-green-900">
-        <Routes>
-          <Route element={<Layout />}>
-            <Route path="/" element={<Home />} />
-            <Route path="/predictions" element={<Predictions />} />
-            <Route path="/live" element={<LiveScores />} />
-            <Route path="/leagues" element={<Leagues />} />
-            <Route path="/blog" element={<Blog />} />
-            <Route path="/blog/:slug" element={<BlogPost />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            <Route path="/terms-of-service" element={<TermsOfService />} />
-            <Route path="/team/:teamId" element={<TeamDetails />} />
-            <Route path="/player/:playerId" element={<PlayerDetails />} />
-            <Route path="/match/:id" element={<MatchDetails />} />
-            <Route path="/signin" element={<SignIn />} />
-            <Route path="/signup" element={<SignUp />} />
-            <Route path="/submit-tip" element={<SubmitTip />} />
-            <Route path="/leaderboard" element={<Leaderboard />} />
-            <Route path="/admin" element={
-              <AdminRoute>
-                <AdminDashboard />
-              </AdminRoute>
-            } />
-            <Route path="/admin/ads" element={
-              <AdminRoute>
-                <AdManager />
-              </AdminRoute>
-            } />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/profile" element={<UserProfile />} />
-            <Route path="/:leagueSlug" element={<LeaguePredictions />} />
-            <Route path="*" element={<NotFound />} />
-          </Route>
-        </Routes>
+        <Suspense fallback={<div className="flex items-center justify-center min-h-screen">Loading...</div>}>
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/predictions" element={<Predictions />} />
+              <Route path="/live" element={<LiveScores />} />
+              <Route path="/leagues" element={<Leagues />} />
+              <Route path="/blog" element={<Blog />} />
+              <Route path="/blog/:slug" element={<BlogPost />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/terms-of-service" element={<TermsOfService />} />
+              <Route path="/team/:teamId" element={<TeamDetails />} />
+              <Route path="/player/:playerId" element={<PlayerDetails />} />
+              <Route path="/match/:id" element={<MatchDetails />} />
+              <Route path="/signin" element={<SignIn />} />
+              <Route path="/signup" element={<SignUp />} />
+              <Route path="/submit-tip" element={<SubmitTip />} />
+              <Route path="/leaderboard" element={<Leaderboard />} />
+              <Route path="/admin" element={
+                <AdminRoute>
+                  <AdminDashboard />
+                </AdminRoute>
+              } />
+              <Route path="/admin/ads" element={
+                <AdminRoute>
+                  <AdManager />
+                </AdminRoute>
+              } />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<UserProfile />} />
+              <Route path="/:leagueSlug" element={<LeaguePredictions />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </Suspense>
         <CookieConsent />
       </div>
     </Router>

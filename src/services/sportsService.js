@@ -36,9 +36,3 @@ export const getPlayerDetails = async (playerId) => {
   return res.json();
 };
 
-export const getNews = async () => {
-  // Assuming there is a news endpoint on the bzzoiro API
-  const res = await fetch('/api/news');
-  if (!res.ok) return [];
-  return res.json();
-};

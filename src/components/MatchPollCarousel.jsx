@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'motion/react';
-import { ChevronLeft, ChevronRight, Users } from 'lucide-react';
+import { Users } from 'lucide-react';
 import { getPredictions, getTeamLogoUrl } from '../services/api';
 import SmartLogo from './SmartLogo';
 
@@ -304,12 +304,8 @@ export default function MatchPollCarousel() {
   if (matches.length === 0) {
     return (
       <section className="py-12">
-        <div className="w-full max-w-xl mx-auto h-96 bg-white rounded-[2rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center p-8">
-          <div className="animate-bounce mb-4">
-            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
-              <span className="text-white text-2xl">⚽</span>
-            </div>
-          </div>
+        <div className="w-full max-w-xl mx-auto aspect-square bg-white rounded-[2rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center p-8">
+          <div className="w-12 h-12 border-4 border-green-200 border-t-green-500 rounded-full animate-spin mb-4"></div>
           <p className="text-slate-600 font-bold text-lg">Loading predictions...</p>
         </div>
       </section>
@@ -326,21 +322,30 @@ export default function MatchPollCarousel() {
               initial={{ opacity: 0, x: 50 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -50 }}
-              className="bg-[#1e293b] p-8 rounded-[2rem] shadow-xl text-white relative overflow-hidden"
+              drag="x"
+              dragConstraints={{ left: 0, right: 0 }}
+              dragElastic={0.2}
+              onDragEnd={(e, { offset, velocity }) => {
+                const swipe = Math.abs(offset.x) * velocity.x;
+                if (swipe < -10000 || offset.x < -50) {
+                  next();
+                } else if (swipe > 10000 || offset.x > 50) {
+                  prev();
+                }
+              }}
+              className="bg-[#1e293b] p-4 sm:p-8 rounded-[2rem] shadow-xl text-white relative overflow-hidden aspect-square flex flex-col justify-between cursor-grab active:cursor-grabbing"
             >
-              <button onClick={prev} className="absolute -left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full text-slate-900 hover:bg-slate-100 transition-all shadow-lg"><ChevronLeft className="w-6 h-6" /></button>
-              <button onClick={next} className="absolute -right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white rounded-full text-slate-900 hover:bg-slate-100 transition-all shadow-lg"><ChevronRight className="w-6 h-6" /></button>
               
               {/* Header: Time and League */}
-              <div className="flex justify-between items-center text-slate-400 text-sm sm:text-base font-medium mb-8 px-2">
+              <div className="flex justify-between items-center text-slate-400 text-xs sm:text-sm font-medium px-1">
                 <span>{match?.event?.event_date ? new Date(match.event.event_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '21:45'}</span>
-                <span className="truncate">{match?.event?.league?.name || 'Serie A'}</span>
+                <span className="truncate ml-2">{match?.event?.league?.name || 'Serie A'}</span>
               </div>
 
               {/* Matchup: Logos, Names, and Score */}
-              <div className="flex justify-between items-center mb-10 px-4">
+              <div className="flex justify-between items-center px-1">
                 <div className="flex flex-col items-center text-center w-1/3">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 flex items-center justify-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 mb-1 sm:mb-2 flex items-center justify-center">
                     <SmartLogo 
                       urls={homeLogos} 
                       alt={home_team?.name} 
@@ -348,17 +353,17 @@ export default function MatchPollCarousel() {
                       fallbackText={home_team?.name || 'H'}
                     />
                   </div>
-                  <span className="font-bold text-sm sm:text-base leading-tight text-white">{home_team?.name}</span>
+                  <span className="font-bold text-xs sm:text-sm leading-tight text-white line-clamp-2">{home_team?.name}</span>
                 </div>
                 
                 <div className="flex flex-col items-center justify-center w-1/3">
-                  <div className="text-4xl sm:text-5xl font-black text-white">
+                  <div className="text-2xl sm:text-4xl font-black text-white">
                     -
                   </div>
                 </div>
 
                 <div className="flex flex-col items-center text-center w-1/3">
-                  <div className="w-16 h-16 sm:w-20 sm:h-20 mb-3 flex items-center justify-center">
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 mb-1 sm:mb-2 flex items-center justify-center">
                     <SmartLogo 
                       urls={awayLogos} 
                       alt={away_team?.name} 
@@ -366,23 +371,23 @@ export default function MatchPollCarousel() {
                       fallbackText={away_team?.name || 'A'}
                     />
                   </div>
-                  <span className="font-bold text-sm sm:text-base leading-tight text-white">{away_team?.name}</span>
+                  <span className="font-bold text-xs sm:text-sm leading-tight text-white line-clamp-2">{away_team?.name}</span>
                 </div>
               </div>
 
               {/* Fan Votes */}
-              <div className="flex items-center justify-center gap-2 text-slate-400 text-sm font-medium mb-6">
+              <div className="flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm font-medium">
                 {totalVotes} Fans voted
               </div>
 
               {/* Percentage Bars */}
-              <div className="space-y-4 mb-10 px-2">
-                <div className="flex justify-between text-sm font-bold text-white mb-2">
-                  <span>{home_team?.name} {homePercentage}%</span>
-                  <span>Draw {drawPercentage}%</span>
-                  <span>{away_team?.name} {awayPercentage}%</span>
+              <div className="space-y-1 sm:space-y-2 px-1">
+                <div className="flex justify-between text-[10px] sm:text-sm font-bold text-white gap-1 mb-1 sm:mb-2">
+                  <span className="truncate flex-1 text-left">{home_team?.name} {homePercentage}%</span>
+                  <span className="truncate flex-1 text-center">Draw {drawPercentage}%</span>
+                  <span className="truncate flex-1 text-right">{away_team?.name} {awayPercentage}%</span>
                 </div>
-                <div className="flex h-3.5 rounded-full overflow-hidden bg-slate-700">
+                <div className="flex h-2 sm:h-3.5 rounded-full overflow-hidden bg-slate-700">
                   <motion.div initial={{ width: 0 }} animate={{ width: `${homePercentage}%` }} className="bg-[#e11d48]" />
                   <motion.div initial={{ width: 0 }} animate={{ width: `${drawPercentage}%` }} className="bg-[#64748b]" />
                   <motion.div initial={{ width: 0 }} animate={{ width: `${awayPercentage}%` }} className="bg-[#0891b2]" />
@@ -390,10 +395,10 @@ export default function MatchPollCarousel() {
               </div>
 
               {/* Vote Buttons */}
-              <div className="flex justify-center gap-3 sm:gap-4 px-2">
-                <button onClick={() => handleVote('home')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-[#e11d48] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-rose-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'home' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Home</button>
-                <button onClick={() => handleVote('draw')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-[#64748b] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-slate-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'draw' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Draw</button>
-                <button onClick={() => handleVote('away')} disabled={isVoting} className={`flex-1 py-3 sm:py-4 bg-[#0891b2] text-white rounded-xl font-bold text-sm sm:text-base hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'away' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Away</button>
+              <div className="flex justify-center gap-2 sm:gap-4 px-1">
+                <button onClick={() => handleVote('home')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#e11d48] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-rose-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'home' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Home</button>
+                <button onClick={() => handleVote('draw')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#64748b] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-slate-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'draw' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Draw</button>
+                <button onClick={() => handleVote('away')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#0891b2] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'away' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Away</button>
               </div>
 
             </motion.div>

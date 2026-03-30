@@ -1,5 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Radio, PenTool, TrendingUp, Trophy, Calendar, LayoutDashboard, User, LogOut, Shield, Medal } from 'lucide-react';
+import { Home, Radio, PenTool, TrendingUp, Trophy, Calendar, LayoutDashboard, User, LogOut, Shield, Medal, Activity } from 'lucide-react';
 import clsx from 'clsx';
 import { hapticFeedback } from '../utils/haptics';
 
@@ -24,7 +24,10 @@ export default function Sidebar({ user, isAdmin, handleSignOut }) {
     <aside className="hidden md:flex flex-col w-64 bg-white border-r border-slate-200 h-screen sticky top-0">
       <div className="p-6">
         <Link to="/" className="flex items-center gap-3 group">
-          <img src="https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/Logo.png" alt="Foretips Logo" className="h-20 w-auto group-hover:scale-105 transition-transform" />
+          <div className="bg-green-500 p-2 rounded-xl shadow-sm">
+            <Trophy className="w-6 h-6 text-white" />
+          </div>
+          <span className="text-[#0F172A] font-black text-xl tracking-tighter uppercase">Foretips</span>
         </Link>
       </div>
 

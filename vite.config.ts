@@ -18,5 +18,19 @@ export default defineConfig(({mode}) => {
     server: {
       hmr: process.env.DISABLE_HMR !== 'true',
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
+              return 'react-vendor';
+            }
+            if (id.includes('node_modules/recharts') || id.includes('node_modules/framer-motion') || id.includes('node_modules/motion')) {
+              return 'ui-vendor';
+            }
+          }
+        }
+      }
+    }
   };
 });

@@ -51,8 +51,6 @@ export default function MatchDetails() {
   const [error, setError] = useState(null);
   const [aiAnalysis, setAiAnalysis] = useState('');
   const [analyzing, setAnalyzing] = useState(false);
-  const [events, setEvents] = useState([]);
-  const [fetchingEvents, setFetchingEvents] = useState(false);
 
   useEffect(() => {
     const fetchMatch = async () => {
@@ -66,13 +64,6 @@ export default function MatchDetails() {
           setMatch(data);
           saveToHistory(data);
           generateAiAnalysis(data);
-          
-          // Fetch events if not in match data
-          if (!data.events || data.events.length === 0) {
-            fetchEvents(data.match_id || data.id);
-          } else {
-            setEvents(data.events);
-          }
         }
       } catch (err) {
         if (!initialPrediction) setError(err.message || 'Failed to load match details.');
@@ -84,22 +75,6 @@ export default function MatchDetails() {
 
     fetchMatch();
   }, [id, initialPrediction]);
-
-  const fetchEvents = async (matchId) => {
-    if (!matchId) return;
-    try {
-      setFetchingEvents(true);
-      const { getEvents } = await import('../services/api');
-      const eventsData = await getEvents({ match_id: matchId });
-      if (eventsData && Array.isArray(eventsData)) {
-        setEvents(eventsData);
-      }
-    } catch (err) {
-      console.warn('Failed to fetch match events:', err);
-    } finally {
-      setFetchingEvents(false);
-    }
-  };
 
   const generateAiAnalysis = async (matchData) => {
     if (!matchData) return;
@@ -458,84 +433,46 @@ export default function MatchDetails() {
               )}
             </div>
 
-            {/* Match Events and Stats */}
-            {(events.length > 0 || match.stats) && (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {events.length > 0 && (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="bg-slate-900 p-2 rounded-lg">
-                        <Clock className="w-5 h-5 text-white" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900">Match Events</h3>
-                    </div>
-                    <div className="space-y-4">
-                      {events.map((evt, index) => (
-                        <div key={index} className="flex items-start gap-4 group">
-                          <div className="flex flex-col items-center">
-                            <span className="text-xs font-black text-slate-400 w-8 text-center">{evt.time}'</span>
-                            <div className="w-px h-full bg-slate-100 group-last:hidden mt-1"></div>
-                          </div>
-                          <div className="flex-1 pb-4 border-b border-slate-50 group-last:border-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-sm font-bold text-slate-900 uppercase tracking-tight">
-                                {evt.type}
-                              </span>
-                              {evt.team && (
-                                <span className="text-[10px] font-black text-slate-300 uppercase">
-                                  {evt.team}
-                                </span>
-                              )}
-                            </div>
-                            <p className="text-sm text-slate-600 font-medium">{evt.player || evt.detail}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
+            {/* Match Stats */}
+            {match.stats && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-slate-900 p-2 rounded-lg">
+                    <Activity className="w-5 h-5 text-white" />
                   </div>
-                )}
-                
-                {match.stats && (
-                  <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
-                    <div className="flex items-center gap-3 mb-6">
-                      <div className="bg-slate-900 p-2 rounded-lg">
-                        <Activity className="w-5 h-5 text-white" />
-                      </div>
-                      <h3 className="text-xl font-bold text-slate-900">Match Stats</h3>
-                    </div>
-                    <div className="space-y-6">
-                      <StatBar 
-                        label="Possession" 
-                        home={match.stats.possession?.home || 0} 
-                        away={match.stats.possession?.away || 0} 
-                      />
-                      <StatBar 
-                        label="Shots on Target" 
-                        home={match.stats.shots_on_target?.home || 0} 
-                        away={match.stats.shots_on_target?.away || 0} 
-                        type="count"
-                      />
-                      <StatBar 
-                        label="Total Shots" 
-                        home={match.stats.total_shots?.home || 0} 
-                        away={match.stats.total_shots?.away || 0} 
-                        type="count"
-                      />
-                      <StatBar 
-                        label="Corners" 
-                        home={match.stats.corners?.home || 0} 
-                        away={match.stats.corners?.away || 0} 
-                        type="count"
-                      />
-                      <StatBar 
-                        label="Fouls" 
-                        home={match.stats.fouls?.home || 0} 
-                        away={match.stats.fouls?.away || 0} 
-                        type="count"
-                      />
-                    </div>
-                  </div>
-                )}
+                  <h3 className="text-xl font-bold text-slate-900">Match Stats</h3>
+                </div>
+                <div className="space-y-6">
+                  <StatBar 
+                    label="Possession" 
+                    home={match.stats.possession?.home || 0} 
+                    away={match.stats.possession?.away || 0} 
+                  />
+                  <StatBar 
+                    label="Shots on Target" 
+                    home={match.stats.shots_on_target?.home || 0} 
+                    away={match.stats.shots_on_target?.away || 0} 
+                    type="count"
+                  />
+                  <StatBar 
+                    label="Total Shots" 
+                    home={match.stats.total_shots?.home || 0} 
+                    away={match.stats.total_shots?.away || 0} 
+                    type="count"
+                  />
+                  <StatBar 
+                    label="Corners" 
+                    home={match.stats.corners?.home || 0} 
+                    away={match.stats.corners?.away || 0} 
+                    type="count"
+                  />
+                  <StatBar 
+                    label="Fouls" 
+                    home={match.stats.fouls?.home || 0} 
+                    away={match.stats.fouls?.away || 0} 
+                    type="count"
+                  />
+                </div>
               </div>
             )}
           </div>
