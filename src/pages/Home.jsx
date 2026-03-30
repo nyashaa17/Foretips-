@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { hapticFeedback } from '../utils/haptics';
 import SEO from '../components/SEO';
 import clsx from 'clsx';
+import { MotionCard } from '../components/MotionCard';
 
 import { AdPlacement } from '../components/AdPlacement';
 
@@ -145,7 +146,7 @@ export default function Home() {
               onClick={() => hapticFeedback('medium')}
               className="px-8 py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-green-500/25 flex items-center gap-3 scale-100 hover:scale-105 active:scale-95"
             >
-              <MessageCircle className="w-6 h-6" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-6 h-6" />
               Join WhatsApp Channel
             </a>
           </motion.div>

@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://foretips.co.zw//sitemap.xml

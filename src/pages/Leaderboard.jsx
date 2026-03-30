@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import SEO from '../components/SEO';
 import { Trophy, Medal, Award, TrendingUp } from 'lucide-react';
+import { MotionCard } from '../components/MotionCard';
 
 export default function Leaderboard() {
   const [leaderboard, setLeaderboard] = useState([]);

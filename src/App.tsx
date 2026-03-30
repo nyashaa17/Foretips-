@@ -5,9 +5,8 @@
 
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import ScrollToTop from './components/ScrollToTop';
-import Navbar from './components/Navbar';
-import Footer from './components/Footer';
 import CookieConsent from './components/CookieConsent';
+import Layout from './components/Layout';
 import Home from './pages/Home';
 import Predictions from './pages/Predictions';
 import LiveScores from './pages/LiveScores';
@@ -37,9 +36,8 @@ export default function App() {
     <Router>
       <ScrollToTop />
       <div className="min-h-screen bg-white text-slate-900 font-sans selection:bg-green-500/30 selection:text-green-900">
-        <Navbar />
-        <main>
-          <Routes>
+        <Routes>
+          <Route element={<Layout />}>
             <Route path="/" element={<Home />} />
             <Route path="/predictions" element={<Predictions />} />
             <Route path="/live" element={<LiveScores />} />
@@ -70,10 +68,8 @@ export default function App() {
             <Route path="/profile" element={<UserProfile />} />
             <Route path="/:leagueSlug" element={<LeaguePredictions />} />
             <Route path="*" element={<NotFound />} />
-          </Routes>
-        </main>
-        
-        <Footer />
+          </Route>
+        </Routes>
         <CookieConsent />
       </div>
     </Router>

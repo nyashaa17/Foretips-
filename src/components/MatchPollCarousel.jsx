@@ -291,6 +291,11 @@ export default function MatchPollCarousel() {
       fetchData();
     }
     setIsVoting(false);
+    
+    // Automatically advance to the next poll after a short delay
+    setTimeout(() => {
+      next();
+    }, 1000);
   };
 
   const next = () => setCurrentIndex((prev) => (prev + 1) % matches.length);
@@ -298,9 +303,14 @@ export default function MatchPollCarousel() {
 
   if (matches.length === 0) {
     return (
-      <section className="py-8 text-center">
-        <div className="w-full max-w-lg mx-auto h-64 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-500 text-xs p-4">
-          {debugInfo}
+      <section className="py-12">
+        <div className="w-full max-w-xl mx-auto h-96 bg-white rounded-[2rem] border border-slate-200 shadow-sm flex flex-col items-center justify-center p-8">
+          <div className="animate-bounce mb-4">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center">
+              <span className="text-white text-2xl">⚽</span>
+            </div>
+          </div>
+          <p className="text-slate-600 font-bold text-lg">Loading predictions...</p>
         </div>
       </section>
     );

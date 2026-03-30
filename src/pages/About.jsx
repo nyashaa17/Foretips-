@@ -1,6 +1,7 @@
 import { motion } from 'motion/react';
 import SEO from '../components/SEO';
 import Breadcrumbs from '../components/Breadcrumbs';
+import { MotionCard } from '../components/MotionCard';
 
 export default function About() {
   return (
@@ -22,21 +23,12 @@ export default function About() {
             About Foretips
           </h1>
           
-          <p>
-            Foretips is your go-to platform for smart, data-driven football predictions built for serious bettors worldwide. We combine advanced AI analysis with well-researched insights to deliver accurate and reliable match predictions every day.
-          </p>
-          
-          <p>
-            Our platform covers a wide range of betting markets including daily predictions, correct score tips, and over/under analysis — all carefully selected to help you make more informed decisions.
-          </p>
-          
-          <p>
-            What makes Foretips different is the blend of technology and community. Alongside our AI-powered predictions, users can share their own tips, compete on the leaderboard, and prove their expertise.
-          </p>
-          
-          <p>
-            Whether you're looking for consistent daily picks or want to test your prediction skills against others, Foretips gives you the tools to stay ahead of the game.
-          </p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <MotionCard title="Our Mission" description="Foretips is your go-to platform for smart, data-driven football predictions built for serious bettors worldwide. We combine advanced AI analysis with well-researched insights to deliver accurate and reliable match predictions every day." />
+            <MotionCard title="Our Approach" description="Our platform covers a wide range of betting markets including daily predictions, correct score tips, and over/under analysis — all carefully selected to help you make more informed decisions." />
+            <MotionCard title="Technology & Community" description="What makes Foretips different is the blend of technology and community. Alongside our AI-powered predictions, users can share their own tips, compete on the leaderboard, and prove their expertise." />
+            <MotionCard title="Stay Ahead" description="Whether you're looking for consistent daily picks or want to test your prediction skills against others, Foretips gives you the tools to stay ahead of the game." />
+          </div>
           
           <div className="bg-amber-50 border border-amber-200 p-6 rounded-2xl text-amber-900 font-medium">
             <p className="flex items-start gap-3">

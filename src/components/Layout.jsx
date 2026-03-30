@@ -1,0 +1,47 @@
+import { Outlet } from 'react-router-dom';
+import Navbar from './Navbar';
+import Footer from './Footer';
+import Sidebar from './Sidebar';
+import { useState, useEffect } from 'react';
+import { supabase } from '../supabaseClient';
+import { useNavigate } from 'react-router-dom';
+
+export default function Layout() {
+  const [user, setUser] = useState(null);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      setIsAdmin(currentUser?.email === 'admin@foretips.co.zw');
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      setIsAdmin(currentUser?.email === 'admin@foretips.co.zw');
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    navigate('/');
+  };
+
+  return (
+    <div className="flex min-h-screen bg-slate-50">
+      <Sidebar user={user} isAdmin={isAdmin} handleSignOut={handleSignOut} />
+      <div className="flex-1 flex flex-col min-w-0">
+        <Navbar />
+        <main className="flex-1">
+          <Outlet />
+        </main>
+        <Footer />
+      </div>
+    </div>
+  );
+}

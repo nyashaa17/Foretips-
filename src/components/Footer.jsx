@@ -12,10 +12,7 @@ export default function Footer() {
           {/* Brand Section */}
           <div className="space-y-6">
             <Link to="/" className="flex items-center gap-2 group">
-              <div className="bg-green-500 p-1.5 rounded-xl group-hover:bg-green-600 transition-colors">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-slate-900 font-bold text-2xl tracking-tight">Foretips</span>
+              <img src="https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/Logo.png" alt="Foretips Logo" className="h-20 w-auto group-hover:scale-105 transition-transform" />
             </Link>
             <p className="text-slate-500 text-sm leading-relaxed">
               Leading the way in data-driven football analysis. Our machine learning models process thousands of data points to bring you the most accurate match predictions and insights.
@@ -28,7 +25,7 @@ export default function Footer() {
                 <Instagram className="w-5 h-5" />
               </a>
               <a href="https://whatsapp.com/channel/0029Vb7MXnXKLaHohHn7do3q" target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-green-500 hover:text-white transition-all">
-                <MessageCircle className="w-5 h-5" />
+                <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-5 h-5" />
               </a>
             </div>
           </div>

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Activity, TrendingUp, Trophy, Calendar, LogOut, LayoutDashboard, User, Search } from 'lucide-react';
+import { Menu, X, Home, Radio, PenTool, TrendingUp, Trophy, Calendar, LogOut, LayoutDashboard, User, Search, Activity, Shield, Medal } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { hapticFeedback } from '../utils/haptics';
@@ -43,13 +43,13 @@ export default function Navbar() {
   };
 
   const allNavLinks = [
-    { name: 'Home', path: '/', icon: <Activity className="w-5 h-5" /> },
+    { name: 'Home', path: '/', icon: <Home className="w-5 h-5" /> },
     { name: 'Predictions', path: '/predictions', icon: <TrendingUp className="w-5 h-5" /> },
-    { name: 'Live', path: '/live', icon: <Activity className="w-5 h-5 text-red-500" /> },
-    { name: 'Leagues', path: '/leagues', icon: <Trophy className="w-5 h-5" /> },
+    { name: 'Live', path: '/live', icon: <Radio className="w-5 h-5 text-red-500" /> },
+    { name: 'Leagues', path: '/leagues', icon: <Shield className="w-5 h-5" /> },
     { name: 'Blog', path: '/blog', icon: <Calendar className="w-5 h-5" /> },
-    { name: 'Submit Tip', path: '/submit-tip', icon: <Activity className="w-5 h-5" /> },
-    { name: 'Leaderboard', path: '/leaderboard', icon: <Trophy className="w-5 h-5" /> },
+    { name: 'Submit Tip', path: '/submit-tip', icon: <PenTool className="w-5 h-5" /> },
+    { name: 'Leaderboard', path: '/leaderboard', icon: <Medal className="w-5 h-5" /> },
     { name: 'Admin', path: '/admin', icon: <Activity className="w-5 h-5" />, adminOnly: true },
   ];
 
@@ -58,13 +58,10 @@ export default function Navbar() {
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-24">
           <div className="flex items-center">
             <Link to="/" className="flex items-center gap-3 group">
-              <div className="bg-green-500 p-2 rounded-xl shadow-sm group-hover:scale-105 transition-transform">
-                <Trophy className="w-6 h-6 text-white" />
-              </div>
-              <span className="text-[#0F172A] font-black text-2xl tracking-tighter uppercase">Foretips</span>
+              <img src="https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/Logo.png" alt="Foretips Logo" className="h-20 w-auto group-hover:scale-105 transition-transform" />
             </Link>
           </div>
           
@@ -119,10 +116,7 @@ export default function Navbar() {
               <SheetContent side="right" className="w-[300px] sm:w-[400px] p-0 flex flex-col bg-white">
                 <SheetHeader className="p-4 border-b border-slate-100 text-left">
                   <SheetTitle className="flex items-center gap-3">
-                    <div className="bg-green-500 p-1.5 rounded-lg shadow-sm">
-                      <Trophy className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-[#0F172A] font-black text-xl tracking-tighter uppercase">Foretips</span>
+                    <img src="https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/Logo.png" alt="Foretips Logo" className="h-20 w-auto" />
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
