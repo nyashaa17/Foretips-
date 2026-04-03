@@ -1,15 +1,34 @@
-import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import SEO from '../components/SEO';
 import { Trophy } from 'lucide-react';
 
 export default function SignIn() {
-  const [email, setEmail] = useState('');
+  const location = useLocation();
+  const [email, setEmail] = useState(location.state?.email || '');
   const [password, setPassword] = useState('');
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(location.state?.message || null);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (location.state?.message) {
+      window.history.replaceState({}, document.title);
+    }
+
+    // Listen for auth state changes (e.g., from OAuth popup)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        navigate('/dashboard');
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [location, navigate]);
 
   const handleSignIn = async (e) => {
     e.preventDefault();
@@ -42,17 +61,27 @@ export default function SignIn() {
   };
 
   const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
+          skipBrowserRedirect: true,
         }
       });
       if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank', 'width=500,height=600');
+        // Reset loading state since the user is interacting with a popup
+        setLoading(false);
+      }
     } catch (err) {
       console.error('Google SignIn error:', err);
       setError('Failed to sign in with Google. Please try again.');
+      setLoading(false);
     }
   };
 
@@ -60,6 +89,12 @@ export default function SignIn() {
     <div className="max-w-md mx-auto px-4 py-16">
       <SEO title="Sign In" description="Sign in to your account" />
       
+      {successMessage && (
+        <div className="bg-green-50 text-green-700 p-4 rounded-lg mb-6 text-center font-bold border border-green-200">
+          {successMessage}
+        </div>
+      )}
+
       <div className="flex flex-col items-center justify-center mb-8">
         <Link to="/" className="flex items-center gap-3 group mb-4">
           <div className="bg-green-500 p-2 rounded-xl shadow-sm group-hover:scale-105 transition-transform">

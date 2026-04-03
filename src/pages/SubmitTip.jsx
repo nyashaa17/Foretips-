@@ -220,12 +220,15 @@ export default function SubmitTip() {
         .from('profiles')
         .select('id')
         .eq('id', user.id)
-        .single();
+        .maybeSingle();
 
       if (!profile) {
+        const email = user.email || '';
+        const username = user.user_metadata?.user_name || user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0] || 'user';
+        
         await supabase
           .from('profiles')
-          .upsert([{ id: user.id, username: user.email.split('@')[0] }]);
+          .upsert([{ id: user.id, username: username }]);
       }
 
       const matchId = `${homeTeam} vs ${awayTeam}`;

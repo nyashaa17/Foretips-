@@ -17,6 +17,17 @@ export default function SEO({ title, description, keywords, image, type = 'websi
       metaDescription.setAttribute('content', description || 'Advanced football match analysis and data-driven insights to help you make smarter bets.');
     }
 
+    // Update or create meta keywords
+    if (keywords) {
+      let metaKeywords = document.querySelector('meta[name="keywords"]');
+      if (!metaKeywords) {
+        metaKeywords = document.createElement('meta');
+        metaKeywords.setAttribute('name', 'keywords');
+        document.head.appendChild(metaKeywords);
+      }
+      metaKeywords.setAttribute('content', keywords);
+    }
+
     // Update Open Graph tags
     const ogTitle = document.querySelector('meta[property="og:title"]');
     if (ogTitle) ogTitle.setAttribute('content', fullTitle);

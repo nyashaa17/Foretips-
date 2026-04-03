@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import SEO from '../components/SEO';
@@ -13,11 +13,26 @@ export default function SignUp() {
   const navigate = useNavigate();
   const location = useLocation();
   const message = location.state?.message;
+  const isEmailSignUp = useRef(false);
+
+  useEffect(() => {
+    // Listen for auth state changes (e.g., from OAuth popup)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session && !isEmailSignUp.current) {
+        navigate('/dashboard');
+      }
+    });
+
+    return () => {
+      subscription?.unsubscribe();
+    };
+  }, [navigate]);
 
   const handleSignUp = async (e) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
+    isEmailSignUp.current = true;
 
     try {
       const { data, error: signUpError } = await supabase.auth.signUp({
@@ -45,35 +60,48 @@ export default function SignUp() {
           }
         }
 
-        if (data?.user && !data?.session) {
-          // Email confirmation required
-          setError('Please check your email to confirm your account before signing in.');
-          // Clear the password field
-          setPassword('');
-        } else {
-          navigate('/dashboard');
+        if (data?.session) {
+          await supabase.auth.signOut();
         }
+        
+        navigate('/signin', { 
+          state: { 
+            email: email, 
+            message: "Your account has been created. Please check your email and verify your address before logging in." 
+          } 
+        });
       }
     } catch (err) {
       console.error('SignUp error:', err);
       setError('An unexpected error occurred. Please try again later.');
     } finally {
       setLoading(false);
+      isEmailSignUp.current = false;
     }
   };
 
   const handleGoogleSignIn = async () => {
+    setError(null);
+    setLoading(true);
     try {
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/dashboard`
+          redirectTo: `${window.location.origin}/dashboard`,
+          skipBrowserRedirect: true,
         }
       });
       if (error) throw error;
+      
+      if (data?.url) {
+        window.open(data.url, '_blank', 'width=500,height=600');
+        // Reset loading state since the user is interacting with a popup
+        setLoading(false);
+      }
     } catch (err) {
       console.error('Google SignUp error:', err);
       setError('Failed to sign up with Google. Please try again.');
+      setLoading(false);
     }
   };
 

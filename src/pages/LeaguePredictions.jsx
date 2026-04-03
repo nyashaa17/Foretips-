@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getLeagues } from '../services/api';
 import LeagueStandings from '../components/LeagueStandings';
 import NotFound from './NotFound';
@@ -7,6 +7,7 @@ import { ChevronLeft, Trophy, List } from 'lucide-react';
 
 export default function LeaguePredictions() {
   const { leagueSlug } = useParams();
+  const navigate = useNavigate();
   const [leagueInfo, setLeagueInfo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -45,10 +46,10 @@ export default function LeaguePredictions() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Link to="/leagues" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors">
+      <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors">
         <ChevronLeft className="w-4 h-4" />
         Back to Leagues
-      </Link>
+      </button>
 
       <div className="flex items-center gap-4 mb-8">
         <div className="bg-blue-100 p-3 rounded-xl border border-blue-200">

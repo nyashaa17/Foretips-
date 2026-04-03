@@ -50,10 +50,9 @@ export default function Navbar() {
     { name: 'Blog', path: '/blog', icon: <Calendar className="w-5 h-5" /> },
     { name: 'Submit Tip', path: '/submit-tip', icon: <PenTool className="w-5 h-5" /> },
     { name: 'Leaderboard', path: '/leaderboard', icon: <Medal className="w-5 h-5" /> },
-    { name: 'Admin', path: '/admin', icon: <Activity className="w-5 h-5" />, adminOnly: true },
   ];
 
-  const navLinks = allNavLinks.filter(link => !link.adminOnly || isAdmin);
+  const navLinks = allNavLinks;
 
   return (
     <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
@@ -69,15 +68,15 @@ export default function Navbar() {
           </div>
           
           {/* Desktop Menu */}
-          <div className="hidden md:block">
-            <div className="ml-10 flex items-baseline space-x-4">
+          <div className="hidden lg:block">
+            <div className="ml-10 flex items-center space-x-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
                   to={link.path}
                   onClick={() => hapticFeedback('light')}
                   className={clsx(
-                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                    'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap',
                     location.pathname === link.path
                       ? 'bg-slate-100 text-green-600'
                       : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'
@@ -89,11 +88,11 @@ export default function Navbar() {
               ))}
               {user ? (
                 <div className="flex items-center gap-4 ml-4 pl-4 border-l border-slate-200">
-                  <Link to="/dashboard" className="text-sm font-medium text-slate-700 hover:text-green-600 flex items-center gap-2">
+                  <Link to="/dashboard" className="text-sm font-medium text-slate-700 hover:text-green-600 flex items-center gap-2 whitespace-nowrap">
                     <LayoutDashboard className="w-4 h-4" />
                     Dashboard
                   </Link>
-                  <Link to="/profile" className="text-sm font-medium text-slate-700 hover:text-green-600 flex items-center gap-2">
+                  <Link to="/profile" className="text-sm font-medium text-slate-700 hover:text-green-600 flex items-center gap-2 whitespace-nowrap">
                     <User className="w-4 h-4" />
                     Profile
                   </Link>
@@ -102,16 +101,15 @@ export default function Navbar() {
                   </button>
                 </div>
               ) : (
-                <>
-                  <Link to="/signin" className="text-slate-600 hover:text-slate-900 font-medium text-sm">Sign In</Link>
-                  <Link to="/signup" className="px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 transition-colors">Sign Up</Link>
-                </>
+                <div className="flex items-center ml-4 pl-4 border-l border-slate-200">
+                  <Link to="/signin" className="px-4 py-2 bg-green-600 text-white rounded-lg font-bold text-sm hover:bg-green-700 transition-colors whitespace-nowrap">Sign In</Link>
+                </div>
               )}
             </div>
           </div>
           
           {/* Mobile menu button */}
-          <div className="-mr-2 flex md:hidden">
+          <div className="-mr-2 flex lg:hidden">
             <Sheet open={isOpen} onOpenChange={setIsOpen}>
               <SheetTrigger className="inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 focus:outline-none">
                 <Menu className="block h-6 w-6" />
@@ -192,16 +190,9 @@ export default function Navbar() {
                       <Link 
                         to="/signin" 
                         onClick={() => setIsOpen(false)} 
-                        className="flex items-center justify-center w-full px-4 py-3 text-base font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl shadow-sm transition-all"
-                      >
-                        Sign In
-                      </Link>
-                      <Link 
-                        to="/signup" 
-                        onClick={() => setIsOpen(false)} 
                         className="flex items-center justify-center w-full px-4 py-3 text-base font-bold text-white bg-green-600 hover:bg-green-700 rounded-xl shadow-sm transition-all"
                       >
-                        Sign Up
+                        Sign In
                       </Link>
                     </div>
                   )}

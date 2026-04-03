@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { getPredictions } from '../services/api';
+import { getPredictions, getMemoryCache, getPredictionsCacheKey } from '../services/api';
+import { filterYesterdayMatches, filterTodayMatches, filterTomorrowMatches } from '../utils/dateFilters';
 import PredictionCard from '../components/PredictionCard';
 import { AdPlacement } from '../components/AdPlacement';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
@@ -10,19 +11,36 @@ import clsx from 'clsx';
 import React from 'react';
 
 export default function Predictions() {
-  const [predictions, setPredictions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [predictions, setPredictions] = useState(() => {
+    const cacheKey = getPredictionsCacheKey({ upcoming: true });
+    const cached = getMemoryCache(cacheKey);
+    if (!cached) return [];
+    return Array.isArray(cached) ? cached : (cached.results || []);
+  });
+  
+  const [loading, setLoading] = useState(() => {
+    const cacheKey = getPredictionsCacheKey({ upcoming: true });
+    const cached = getMemoryCache(cacheKey);
+    return !cached;
+  });
+  
   const [error, setError] = useState(null);
   
   // New "Professional" Controls
   const [sortBy, setSortBy] = useState('date'); // 'date', 'confidence'
-  const [filterType, setFilterType] = useState('all'); // 'all', 'high_confidence'
+  const [dateFilter, setDateFilter] = useState('today'); // 'yesterday', 'today', 'tomorrow'
   const [searchQuery, setSearchQuery] = useState(''); // Search by team name
 
   const fetchPredictions = async (forceRefresh = false) => {
-    setLoading(true);
-    setError(null);
     try {
+      const cacheKey = getPredictionsCacheKey({ upcoming: true });
+      const cached = getMemoryCache(cacheKey);
+      
+      if (!cached || forceRefresh) {
+        setLoading(true);
+      }
+      setError(null);
+      
       const today = new Date().toISOString().split('T')[0];
       // Fetch more predictions to ensure we get all of them, including upcoming matches
       const preds = await getPredictions({ upcoming: true }, forceRefresh);
@@ -57,20 +75,24 @@ export default function Predictions() {
       });
     }
 
-    // Apply Filter
-    if (filterType === 'high_confidence') {
-      result = result.filter(p => p.confidence >= 0.7);
+    // Apply Date Filter
+    if (dateFilter === 'yesterday') {
+      result = filterYesterdayMatches(result);
+    } else if (dateFilter === 'today') {
+      result = filterTodayMatches(result);
+    } else if (dateFilter === 'tomorrow') {
+      result = filterTomorrowMatches(result);
     }
 
     // Apply Sort
     if (sortBy === 'confidence') {
       result.sort((a, b) => b.confidence - a.confidence);
     } else {
-      result.sort((a, b) => new Date(b.event.event_date) - new Date(a.event.event_date));
+      result.sort((a, b) => new Date(b.event?.start_time || b.event?.event_date || 0) - new Date(a.event?.start_time || a.event?.event_date || 0));
     }
 
     return result;
-  }, [predictions, sortBy, filterType, searchQuery]);
+  }, [predictions, sortBy, dateFilter, searchQuery]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -104,17 +126,22 @@ export default function Predictions() {
           
           <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
             <button 
-              onClick={() => setFilterType('all')}
-              className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap", filterType === 'all' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
+              onClick={() => setDateFilter('yesterday')}
+              className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors", dateFilter === 'yesterday' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
             >
-              All Matches
+              Yesterday
             </button>
             <button 
-              onClick={() => setFilterType('high_confidence')}
-              className={clsx("flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap", filterType === 'high_confidence' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
+              onClick={() => setDateFilter('today')}
+              className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors", dateFilter === 'today' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
             >
-              <Zap className="w-4 h-4" />
-              High Confidence
+              Today
+            </button>
+            <button 
+              onClick={() => setDateFilter('tomorrow')}
+              className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors", dateFilter === 'tomorrow' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
+            >
+              Tomorrow
             </button>
           </div>
         </div>
@@ -139,7 +166,7 @@ export default function Predictions() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            Array.from({ length: 6 }).map((_, i) => <PredictionSkeleton key={i} />)
+            Array.from({ length: 12 }).map((_, i) => <PredictionSkeleton key={i} />)
           ) : processedPredictions.length > 0 ? (
             processedPredictions.map((prediction, index) => (
               <React.Fragment key={`${prediction.id}-${index}`}>

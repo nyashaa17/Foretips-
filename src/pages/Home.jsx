@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
+import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { getPredictions } from '../services/api';
+import { getPredictions, getMemoryCache, getPredictionsCacheKey } from '../services/api';
+import { filterYesterdayMatches, filterTodayMatches, filterTomorrowMatches } from '../utils/dateFilters';
 import PredictionCard from '../components/PredictionCard';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import CommunityTipsPreview from '../components/CommunityTipsPreview';
@@ -18,43 +19,75 @@ import { AdPlacement } from '../components/AdPlacement';
 const MatchPollCarousel = lazy(() => import('../components/MatchPollCarousel'));
 
 export default function Home() {
-  const [predictions, setPredictions] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [dateFilter, setDateFilter] = useState('today'); // 'yesterday', 'today', 'tomorrow'
+  
+  // Initialize state from cache if available
+  const [predictions, setPredictions] = useState(() => {
+    const cacheKey = getPredictionsCacheKey({ upcoming: true });
+    const cached = getMemoryCache(cacheKey);
+    return Array.isArray(cached) ? cached : (cached?.results || []);
+  });
+  const [loading, setLoading] = useState(() => {
+    const cacheKey = getPredictionsCacheKey({ upcoming: true });
+    const cached = getMemoryCache(cacheKey);
+    return !cached;
+  });
   const [error, setError] = useState(null);
-  const [sortBy, setSortBy] = useState('date'); // 'date', 'confidence'
-  const [filterType, setFilterType] = useState('all'); // 'all', 'high_confidence'
+  const predictionsRef = useRef(null);
 
-  const processedPredictions = useMemo(() => {
+  const featuredPredictions = useMemo(() => {
     if (!Array.isArray(predictions)) return [];
     let result = [...predictions];
 
-    // Apply Filter
-    if (filterType === 'high_confidence') {
-      result = result.filter(p => p.confidence >= 70);
+    // Apply Date Filter
+    if (dateFilter === 'yesterday') {
+      result = filterYesterdayMatches(result);
+    } else if (dateFilter === 'today') {
+      result = filterTodayMatches(result);
+    } else if (dateFilter === 'tomorrow') {
+      result = filterTomorrowMatches(result);
     }
 
-    // Apply Sort
-    if (sortBy === 'confidence') {
-      result.sort((a, b) => b.confidence - a.confidence);
-    } else {
-      result.sort((a, b) => new Date(a.event.event_date) - new Date(b.event.event_date));
-    }
+    // Sort by Major Leagues and High Confidence
+    const MAJOR_LEAGUES = ['premier league', 'la liga', 'serie a', 'bundesliga', 'ligue 1', 'champions league', 'europa league', 'world cup'];
+    
+    result.sort((a, b) => {
+      const getLeagueName = (match) => {
+        const l = match.event?.league || match.league;
+        if (typeof l === 'string') return l.toLowerCase();
+        if (l && typeof l === 'object' && l.name) return String(l.name).toLowerCase();
+        return String(l || '').toLowerCase();
+      };
 
-    return result;
-  }, [predictions, sortBy, filterType]);
+      const aLeague = getLeagueName(a);
+      const bLeague = getLeagueName(b);
+      const aIsMajor = MAJOR_LEAGUES.some(l => aLeague.includes(l)) ? 1 : 0;
+      const bIsMajor = MAJOR_LEAGUES.some(l => bLeague.includes(l)) ? 1 : 0;
+      
+      // Boost major leagues (+15), then sort by confidence
+      const aScore = (a.confidence || 0) + (aIsMajor * 15);
+      const bScore = (b.confidence || 0) + (bIsMajor * 15);
+      
+      return bScore - aScore;
+    });
+
+    // Take top 5 featured matches
+    return result.slice(0, 5);
+  }, [predictions, dateFilter]);
 
   const loadPredictions = async () => {
     try {
-      setLoading(true);
+      const cacheKey = getPredictionsCacheKey({ upcoming: true });
+      const cached = getMemoryCache(cacheKey);
+      
+      // Only show loading state if we don't have cached data
+      if (!cached) {
+        setLoading(true);
+      }
       setError(null);
 
-      const today = new Date().toISOString().split('T')[0];
-      const preds = await getPredictions({ 
-        upcoming: true
-      });
-      console.log('Predictions loaded:', preds);
-      
-      setPredictions(preds || []);
+      const predsData = await getPredictions({ upcoming: true });
+      setPredictions(predsData || []);
     } catch (err) {
       setError(err.message || 'Failed to load data. Please try again later.');
       console.error('Error loading predictions:', err);
@@ -72,6 +105,7 @@ export default function Home() {
       <SEO 
         title="Data-Driven Football Predictions & Betting Tips" 
         description="Get accurate football match predictions, advanced analysis, and data-driven insights to help you make smarter bets."
+        keywords="football predictions, betting tips, soccer predictions, match analysis, data-driven football, sports betting, live scores, football stats"
       />
       {/* Hero Section */}
       <motion.div 
@@ -158,77 +192,45 @@ export default function Home() {
         <MatchPollCarousel />
       </Suspense>
 
-      {/* Controls */}
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white p-4 rounded-2xl border border-slate-100 shadow-sm">
-          <div className="flex flex-wrap items-center gap-2">
-            <button 
-              onClick={() => setFilterType('all')}
-              className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors", filterType === 'all' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
-            >
-              All Matches
-            </button>
-            <button 
-              onClick={() => setFilterType('high_confidence')}
-              className={clsx("flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-colors", filterType === 'high_confidence' ? "bg-green-500 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
-            >
-              <Zap className="w-4 h-4" />
-              High Confidence
-            </button>
-            
-            {/* Quick Navigation Buttons */}
-            <div className="hidden md:block w-px h-6 bg-slate-200 mx-2"></div>
-            
-            <button 
-              onClick={() => {
-                document.getElementById('community-tips')?.scrollIntoView({ behavior: 'smooth' });
-                hapticFeedback('light');
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-blue-50 text-blue-600 hover:bg-blue-100 transition-colors"
-            >
-              <Users className="w-4 h-4" />
-              Community Tips
-            </button>
-            <button 
-              onClick={() => {
-                document.getElementById('leaderboard')?.scrollIntoView({ behavior: 'smooth' });
-                hapticFeedback('light');
-              }}
-              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold bg-amber-50 text-amber-600 hover:bg-amber-100 transition-colors"
-            >
-              <Medal className="w-4 h-4" />
-              Leaderboard
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-slate-500 uppercase">Sort By:</span>
-            <select 
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-slate-100 text-slate-900 text-sm rounded-lg p-2 outline-none font-bold"
-            >
-              <option value="date">Date</option>
-              <option value="confidence">Confidence</option>
-            </select>
-          </div>
-        </div>
-      </div>
-
       {/* Predictions Section */}
-      <section>
+      <section ref={predictionsRef}>
+        {/* Header */}
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="bg-green-500 p-2 rounded-lg">
-              <Trophy className="w-6 h-6 text-white" />
+            <div className="bg-green-500 p-2 rounded-xl shrink-0 shadow-sm">
+              <Trophy className="w-5 h-5 text-white" />
             </div>
-            <h2 className="text-2xl font-bold text-slate-900">
+            <h2 className="text-lg sm:text-2xl font-extrabold text-slate-900 tracking-tight">
               Featured Predictions
             </h2>
           </div>
-          <Link to="/predictions" className="text-sm font-medium text-slate-500 hover:text-slate-900 flex items-center gap-1">
+          <Link to="/predictions" className="text-sm font-bold text-green-600 hover:text-green-700 flex items-center gap-1 shrink-0 bg-green-50 hover:bg-green-100 px-3 py-1.5 rounded-lg transition-colors">
             View All <ChevronRight className="w-4 h-4" />
           </Link>
+        </div>
+
+        {/* Controls */}
+        <div className="mb-8 flex justify-center w-full">
+          <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm w-full sm:w-auto overflow-x-auto">
+            <button 
+              onClick={() => setDateFilter('yesterday')}
+              className={clsx("flex-1 sm:flex-none px-4 sm:px-8 py-3 rounded-xl text-sm sm:text-base font-bold transition-all whitespace-nowrap", dateFilter === 'yesterday' ? "bg-slate-900 text-white shadow-md" : "bg-transparent text-slate-600 hover:bg-slate-100")}
+            >
+              Yesterday
+            </button>
+            <button 
+              onClick={() => setDateFilter('today')}
+              className={clsx("flex-1 sm:flex-none px-4 sm:px-8 py-3 rounded-xl text-sm sm:text-base font-bold transition-all whitespace-nowrap", dateFilter === 'today' ? "bg-slate-900 text-white shadow-md" : "bg-transparent text-slate-600 hover:bg-slate-100")}
+            >
+              Today
+            </button>
+            <button 
+              onClick={() => setDateFilter('tomorrow')}
+              className={clsx("flex-1 sm:flex-none px-4 sm:px-8 py-3 rounded-xl text-sm sm:text-base font-bold transition-all whitespace-nowrap", dateFilter === 'tomorrow' ? "bg-slate-900 text-white shadow-md" : "bg-transparent text-slate-600 hover:bg-slate-100")}
+            >
+              Tomorrow
+            </button>
+          </div>
         </div>
 
         {error ? (
@@ -239,20 +241,32 @@ export default function Home() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loading ? (
-                Array.from({ length: 10 }).map((_, i) => <PredictionSkeleton key={i} />)
-              ) : processedPredictions.length > 0 ? (
-                processedPredictions.map((prediction, index) => [
+                Array.from({ length: 5 }).map((_, i) => <PredictionSkeleton key={i} />)
+              ) : featuredPredictions.length > 0 ? (
+                featuredPredictions.map((prediction, index) => [
                   <PredictionCard key={`${prediction.id}-${index}`} prediction={prediction} />,
                   index === 0 && <AdPlacement key="ad-inline" position="header" className="col-span-full" />
                 ])
               ) : (
                 <div className="col-span-full py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
                   <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-                  <p className="text-slate-500 font-medium">No predictions available for this date/filter.</p>
+                  <p className="text-slate-500 font-medium">No featured predictions available for this date.</p>
                 </div>
               )}
             </div>
             
+            {/* View All Predictions Button */}
+            {!loading && (
+              <div className="flex justify-center mt-10">
+                <Link 
+                  to="/predictions" 
+                  onClick={() => hapticFeedback('medium')}
+                  className="inline-flex items-center gap-2 px-8 py-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-2xl transition-all shadow-lg hover:shadow-xl hover:-translate-y-1"
+                >
+                  View All Predictions <ChevronRight className="w-5 h-5" />
+                </Link>
+              </div>
+            )}
           </>
         )}
       </section>

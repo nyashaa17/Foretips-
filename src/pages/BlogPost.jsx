@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import React from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
 import NotFound from './NotFound';
@@ -23,6 +23,7 @@ import { supabase } from '../supabaseClient';
 
 export default function BlogPost() {
   const { slug } = useParams();
+  const navigate = useNavigate();
   const [post, setPost] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -100,13 +101,13 @@ export default function BlogPost() {
       {/* Hero Header */}
       <div className="bg-white border-b border-slate-200 pt-8 pb-12">
         <div className="max-w-4xl mx-auto px-4">
-          <Link 
-            to="/blog" 
+          <button 
+            onClick={() => navigate(-1)}
             className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-8 transition-colors text-sm font-medium"
           >
             <ChevronLeft className="w-4 h-4" />
             Back to Insights
-          </Link>
+          </button>
 
           <div className="space-y-6">
             <div className="flex items-center gap-3">

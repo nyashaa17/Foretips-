@@ -5,10 +5,9 @@ import { CheckCircle, XCircle, Clock, User, AlertCircle, TrendingUp, Trophy, Meg
 import ConfirmationModal from '../components/ConfirmationModal';
 import { Link } from 'react-router-dom';
 import BlogManager from '../components/BlogManager';
-import BettingSitesManager from '../components/BettingSitesManager';
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState('tips'); // 'tips', 'featured', 'blogs', 'betting'
+  const [activeTab, setActiveTab] = useState('tips'); // 'tips', 'featured', 'blogs'
   const [tips, setTips] = useState([]);
   const [featuredMatches, setFeaturedMatches] = useState([]);
   const [newMatchId, setNewMatchId] = useState('');
@@ -256,18 +255,10 @@ export default function AdminDashboard() {
               <FileText className="w-4 h-4" />
               Blogs
             </button>
-            <button 
-              onClick={() => setActiveTab('betting')}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all ${activeTab === 'betting' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-            >
-              <Trophy className="w-4 h-4" />
-              Betting Sites
-            </button>
           </div>
         </div>
 
         {activeTab === 'blogs' && <BlogManager />}
-        {activeTab === 'betting' && <BettingSitesManager />}
 
         {activeTab === 'featured' && (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">

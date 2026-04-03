@@ -55,6 +55,21 @@ export default function PredictionCard({ prediction }) {
     away: event.odds_away || (prob_away_win ? (100 / prob_away_win).toFixed(2) : null)
   };
 
+  const hasActualScore = event.home_score !== undefined && event.away_score !== undefined && event.home_score !== null && event.away_score !== null;
+  const isMatchFinished = event.status === 'Finished' || event.status === 'FT' || hasActualScore;
+
+  let actualResult = null;
+  let predictionCorrect = null;
+  if (hasActualScore) {
+    if (event.home_score > event.away_score) actualResult = 'H';
+    else if (event.home_score < event.away_score) actualResult = 'A';
+    else actualResult = 'D';
+
+    if (predicted_result) {
+      predictionCorrect = actualResult === predicted_result;
+    }
+  }
+
   const leagueLogos = [getLeagueLogoUrl(league?.api_id)];
   const homeLogos = [getTeamLogoUrl(home_team?.api_id)];
   const awayLogos = [getTeamLogoUrl(away_team?.api_id)];
@@ -125,7 +140,18 @@ export default function PredictionCard({ prediction }) {
           </div>
           
           <div className="flex flex-col items-center justify-center w-[20%]">
-            <div className="text-[10px] font-black text-slate-300">VS</div>
+            {hasActualScore ? (
+              <div className="bg-slate-900 px-3 py-1.5 rounded-lg border border-slate-800 flex items-center gap-2">
+                <span className="text-lg font-bold text-white">{event.home_score}</span>
+                <span className="text-sm text-slate-400">-</span>
+                <span className="text-lg font-bold text-white">{event.away_score}</span>
+              </div>
+            ) : (
+              <div className="text-[10px] font-black text-slate-300">VS</div>
+            )}
+            {isMatchFinished && !hasActualScore && (
+              <div className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">FT</div>
+            )}
           </div>
 
           <div className="flex flex-col items-center gap-2 w-[40%]">
@@ -143,7 +169,15 @@ export default function PredictionCard({ prediction }) {
 
         <div className="bg-slate-50 rounded-lg p-3 border border-slate-100 flex items-center justify-between mb-3">
           <div className="flex flex-col">
-            <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Pick</span>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Pick</span>
+              {predictionCorrect === true && (
+                <span className="bg-green-100 text-green-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Won</span>
+              )}
+              {predictionCorrect === false && (
+                <span className="bg-red-100 text-red-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Lost</span>
+              )}
+            </div>
             <span className={clsx("text-sm font-black", getResultColor(predicted_result))}>
               {getResultLabel(predicted_result)}
             </span>

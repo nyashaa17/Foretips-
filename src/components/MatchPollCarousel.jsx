@@ -3,21 +3,62 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import { motion, AnimatePresence } from 'motion/react';
 import { Users } from 'lucide-react';
-import { getPredictions, getTeamLogoUrl } from '../services/api';
+import { getPredictions, getTeamLogoUrl, getMemoryCache, getPredictionsCacheKey } from '../services/api';
 import SmartLogo from './SmartLogo';
 
 export default function MatchPollCarousel() {
   const navigate = useNavigate();
   const [debugInfo, setDebugInfo] = useState('Initializing...');
-  const [matches, setMatches] = useState([]);
+  
+  // Initialize from cache if available
+  const [matches, setMatches] = useState(() => {
+    const cacheKey = getPredictionsCacheKey({ limit: 50 });
+    const cachedData = getMemoryCache(cacheKey);
+    if (!cachedData) return [];
+    
+    const cached = Array.isArray(cachedData) ? cachedData : (cachedData.results || []);
+    
+    let filteredMatches = cached || [];
+    const majorLeagues = [
+      'Premier League', 'La Liga', 'Serie A', 'Bundesliga', 'Ligue 1', 
+      'Brasileirão Serie A', 'Liga Portugal Betclic', 'Eredivisie', 'Championship',
+      'Primeira Liga', 'Major League Soccer'
+    ];
+    
+    const sortMatches = (arr) => {
+      return arr.sort((a, b) => {
+        const maxProbA = Math.max(a.prob_home_win || 0, a.prob_away_win || 0);
+        const maxProbB = Math.max(b.prob_home_win || 0, b.prob_away_win || 0);
+        return maxProbB - maxProbA;
+      });
+    };
+
+    const prioritized = (cached || []).filter(m => {
+      const leagueName = m.league?.name || m.league_name || m.event?.league?.name;
+      return majorLeagues.includes(leagueName);
+    });
+    
+    if (prioritized.length > 0) {
+      filteredMatches = sortMatches(prioritized);
+    } else {
+      filteredMatches = sortMatches(filteredMatches);
+    }
+    
+    return filteredMatches.slice(0, 5);
+  });
+  
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
     const fetchMatches = async () => {
+      // Skip fetch if we already loaded from cache
+      if (matches.length > 0) return;
+      
       try {
         setDebugInfo('Fetching predictions...');
         // Fetch predictions for major leagues
-        const data = await getPredictions({ limit: 50 });
+        const rawData = await getPredictions({ limit: 50 });
+        const data = Array.isArray(rawData) ? rawData : (rawData?.results || []);
         
         if (!data || data.length === 0) {
           setDebugInfo('No matches found.');
@@ -333,12 +374,16 @@ export default function MatchPollCarousel() {
                   prev();
                 }
               }}
-              className="bg-[#1e293b] p-4 sm:p-8 rounded-[2rem] shadow-xl text-white relative overflow-hidden aspect-square flex flex-col justify-between cursor-grab active:cursor-grabbing"
+              className="bg-white p-4 sm:p-8 rounded-[2rem] shadow-xl text-slate-900 border border-slate-200 relative overflow-hidden aspect-square flex flex-col justify-between cursor-grab active:cursor-grabbing"
             >
               
-              {/* Header: Time and League */}
-              <div className="flex justify-between items-center text-slate-400 text-xs sm:text-sm font-medium px-1">
-                <span>{match?.event?.event_date ? new Date(match.event.event_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '21:45'}</span>
+              {/* Header: Date, Time and League */}
+              <div className="flex justify-between items-center text-slate-500 text-xs sm:text-sm font-medium px-1 mb-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span>{match?.event?.event_date ? new Date(match.event.event_date).toLocaleDateString([], {day: 'numeric', month: 'short'}) : 'Today'}</span>
+                  <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                  <span>{match?.event?.event_date ? new Date(match.event.event_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '21:45'}</span>
+                </div>
                 <span className="truncate ml-2">{match?.event?.league?.name || 'Serie A'}</span>
               </div>
 
@@ -349,15 +394,15 @@ export default function MatchPollCarousel() {
                     <SmartLogo 
                       urls={homeLogos} 
                       alt={home_team?.name} 
-                      className="w-full h-full object-contain drop-shadow-md"
+                      className="w-full h-full object-contain drop-shadow-sm"
                       fallbackText={home_team?.name || 'H'}
                     />
                   </div>
-                  <span className="font-bold text-xs sm:text-sm leading-tight text-white line-clamp-2">{home_team?.name}</span>
+                  <span className="font-bold text-xs sm:text-sm leading-tight text-slate-900 line-clamp-2">{home_team?.name}</span>
                 </div>
                 
                 <div className="flex flex-col items-center justify-center w-1/3">
-                  <div className="text-2xl sm:text-4xl font-black text-white">
+                  <div className="text-2xl sm:text-4xl font-black text-slate-300">
                     -
                   </div>
                 </div>
@@ -367,27 +412,27 @@ export default function MatchPollCarousel() {
                     <SmartLogo 
                       urls={awayLogos} 
                       alt={away_team?.name} 
-                      className="w-full h-full object-contain drop-shadow-md"
+                      className="w-full h-full object-contain drop-shadow-sm"
                       fallbackText={away_team?.name || 'A'}
                     />
                   </div>
-                  <span className="font-bold text-xs sm:text-sm leading-tight text-white line-clamp-2">{away_team?.name}</span>
+                  <span className="font-bold text-xs sm:text-sm leading-tight text-slate-900 line-clamp-2">{away_team?.name}</span>
                 </div>
               </div>
 
               {/* Fan Votes */}
-              <div className="flex items-center justify-center gap-2 text-slate-400 text-xs sm:text-sm font-medium">
+              <div className="flex items-center justify-center gap-2 text-slate-500 text-xs sm:text-sm font-medium">
                 {totalVotes} Fans voted
               </div>
 
               {/* Percentage Bars */}
               <div className="space-y-1 sm:space-y-2 px-1">
-                <div className="flex justify-between text-[10px] sm:text-sm font-bold text-white gap-1 mb-1 sm:mb-2">
+                <div className="flex justify-between text-[10px] sm:text-sm font-bold text-slate-700 gap-1 mb-1 sm:mb-2">
                   <span className="truncate flex-1 text-left">{home_team?.name} {homePercentage}%</span>
                   <span className="truncate flex-1 text-center">Draw {drawPercentage}%</span>
                   <span className="truncate flex-1 text-right">{away_team?.name} {awayPercentage}%</span>
                 </div>
-                <div className="flex h-2 sm:h-3.5 rounded-full overflow-hidden bg-slate-700">
+                <div className="flex h-2 sm:h-3.5 rounded-full overflow-hidden bg-slate-100 border border-slate-200">
                   <motion.div initial={{ width: 0 }} animate={{ width: `${homePercentage}%` }} className="bg-[#e11d48]" />
                   <motion.div initial={{ width: 0 }} animate={{ width: `${drawPercentage}%` }} className="bg-[#64748b]" />
                   <motion.div initial={{ width: 0 }} animate={{ width: `${awayPercentage}%` }} className="bg-[#0891b2]" />
@@ -396,9 +441,9 @@ export default function MatchPollCarousel() {
 
               {/* Vote Buttons */}
               <div className="flex justify-center gap-2 sm:gap-4 px-1">
-                <button onClick={() => handleVote('home')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#e11d48] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-rose-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'home' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Home</button>
-                <button onClick={() => handleVote('draw')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#64748b] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-slate-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'draw' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Draw</button>
-                <button onClick={() => handleVote('away')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#0891b2] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'away' ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1e293b]' : ''}`}>Away</button>
+                <button onClick={() => handleVote('home')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#e11d48] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-rose-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'home' ? 'ring-2 ring-slate-900 ring-offset-2' : ''}`}>Home</button>
+                <button onClick={() => handleVote('draw')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#64748b] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-slate-600 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'draw' ? 'ring-2 ring-slate-900 ring-offset-2' : ''}`}>Draw</button>
+                <button onClick={() => handleVote('away')} disabled={isVoting} className={`flex-1 py-2 sm:py-3 bg-[#0891b2] text-white rounded-lg sm:rounded-xl font-bold text-xs sm:text-sm hover:bg-cyan-700 transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${userVote === 'away' ? 'ring-2 ring-slate-900 ring-offset-2' : ''}`}>Away</button>
               </div>
 
             </motion.div>

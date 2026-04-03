@@ -2,12 +2,13 @@ import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '../supabaseClient';
 import SEO from '../components/SEO';
-import { Activity, Trophy, TrendingUp, Clock, CheckCircle, XCircle, Trash2, History, ChevronRight } from 'lucide-react';
+import { Activity, Trophy, TrendingUp, Clock, CheckCircle, XCircle, Trash2, History, ChevronRight, LayoutDashboard, Shield } from 'lucide-react';
 import { getHistory, removeFromHistory, clearHistory } from '../services/api';
 import { hapticFeedback } from '../utils/haptics';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { getTeamLogoUrl } from '../services/api';
 import SmartLogo from '../components/SmartLogo';
+import AdminDashboard from './AdminDashboard';
 
 function HistoryItem({ item, onDelete }) {
   const event = item.event || item;
@@ -77,9 +78,16 @@ export default function Dashboard() {
   const [stats, setStats] = useState({ total: 0, won: 0, lost: 0, rank: 'Unranked' });
   const [loading, setLoading] = useState(true);
   const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
+  const [activeView, setActiveView] = useState('personal'); // 'personal' or 'admin'
   const navigate = useNavigate();
 
   useEffect(() => {
+    // If this is a popup window (e.g., from OAuth), close it and notify the parent
+    if (window.opener && window.opener !== window) {
+      window.close();
+      return;
+    }
+
     const fetchDashboardData = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
@@ -90,11 +98,23 @@ export default function Dashboard() {
       setUser(session.user);
 
       // Fetch user profile
-      const { data: profileData } = await supabase
+      let { data: profileData } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
+        
+      if (!profileData) {
+        const email = session.user.email || '';
+        const username = session.user.user_metadata?.user_name || session.user.user_metadata?.full_name || session.user.user_metadata?.name || email.split('@')[0] || 'user';
+        
+        const { data: newProfile } = await supabase.from('profiles').upsert([{ 
+          id: session.user.id, 
+          username: username
+        }]).select().maybeSingle();
+        
+        profileData = newProfile;
+      }
         
       if (profileData) setProfile(profileData);
 
@@ -234,10 +254,59 @@ export default function Dashboard() {
     ? Math.round((stats.won / (stats.won + stats.lost)) * 100) 
     : 0;
 
+  const isAdmin = user?.email === 'admin@foretips.co.zw';
+
+  if (activeView === 'admin' && isAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-50">
+        <div className="max-w-6xl mx-auto px-4 pt-8 md:pt-12">
+          <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm w-fit">
+            <button 
+              onClick={() => setActiveView('personal')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700"
+            >
+              <Activity className="w-4 h-4" />
+              Personal Dashboard
+            </button>
+            <button 
+              onClick={() => setActiveView('admin')}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all bg-slate-900 text-white shadow-sm"
+            >
+              <Shield className="w-4 h-4" />
+              Admin Dashboard
+            </button>
+          </div>
+        </div>
+        <div className="-mt-4 md:-mt-8">
+          <AdminDashboard />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <SEO title="Dashboard" description="Your personal dashboard" />
       
+      {isAdmin && (
+        <div className="flex items-center gap-2 bg-white p-2 rounded-xl border border-slate-200 shadow-sm w-fit mb-8">
+          <button 
+            onClick={() => setActiveView('personal')}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all bg-slate-900 text-white shadow-sm"
+          >
+            <Activity className="w-4 h-4" />
+            Personal Dashboard
+          </button>
+          <button 
+            onClick={() => setActiveView('admin')}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all text-slate-500 hover:text-slate-700"
+          >
+            <Shield className="w-4 h-4" />
+            Admin Dashboard
+          </button>
+        </div>
+      )}
+
       <div className="mb-8 flex justify-between items-end">
         <div>
           <h1 className="text-3xl font-black text-slate-900 mb-2">Welcome back, {profile?.username || user?.email.split('@')[0]}!</h1>

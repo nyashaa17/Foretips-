@@ -49,7 +49,8 @@ async function startServer() {
       error: (err, req, res) => {
         console.error('Proxy error (/api):', err);
         if ('headersSent' in res && !res.headersSent) {
-          (res as any).status(502).send('Bad Gateway');
+          res.writeHead(502);
+          res.end('Bad Gateway');
         }
       }
     }
@@ -70,7 +71,8 @@ async function startServer() {
       error: (err, req, res) => {
         console.error('Proxy error (/football-api):', err);
         if ('headersSent' in res && !res.headersSent) {
-          (res as any).status(502).send('Bad Gateway');
+          res.writeHead(502);
+          res.end('Bad Gateway');
         }
       }
     }
@@ -88,7 +90,8 @@ async function startServer() {
       error: (err, req, res) => {
         console.error('Proxy error (/sportsdb-api):', err);
         if ('headersSent' in res && !res.headersSent) {
-          (res as any).status(502).send('Bad Gateway');
+          res.writeHead(502);
+          res.end('Bad Gateway');
         }
       }
     }
@@ -109,7 +112,8 @@ async function startServer() {
       error: (err, req, res) => {
         console.error('Proxy error (/img):', err);
         if ('headersSent' in res && !res.headersSent) {
-          (res as any).status(502).send('Bad Gateway');
+          res.writeHead(502);
+          res.end('Bad Gateway');
         }
       }
     }

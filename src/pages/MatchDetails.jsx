@@ -147,7 +147,7 @@ export default function MatchDetails() {
 
   const handleBack = (e) => {
     e.preventDefault();
-    navigate('/predictions');
+    navigate(-1);
   };
 
   if (loading) {

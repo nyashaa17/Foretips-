@@ -3,6 +3,10 @@ import { supabase } from '../supabaseClient';
 
 const API_BASE_URL = '/api';
 
+// In-memory cache to prevent annoying reloads on navigation
+const memoryCache = new Map();
+const MEMORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // Helper to fetch from API with Supabase caching
 async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh = false) {
   const normalizePrediction = (p) => {
@@ -89,6 +93,15 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh
     return p;
   };
 
+  // 0. Try to get from in-memory cache first
+  if (cacheKey && !forceRefresh) {
+    const cached = memoryCache.get(cacheKey);
+    if (cached && (Date.now() - cached.timestamp < MEMORY_CACHE_TTL)) {
+      console.log('[fetchFromApi] Serving from memory cache:', cacheKey);
+      return cached.data;
+    }
+  }
+
   // 1. Try to get from Supabase Cache first
   if (cacheKey && supabase && !forceRefresh) {
     try {
@@ -110,7 +123,9 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh
         
         if (isAfter(cacheAge, oneHourAgo)) {
           console.log('Serving from Supabase cache:', cacheKey);
-          return JSON.parse(cached.data);
+          const parsedData = JSON.parse(cached.data);
+          memoryCache.set(cacheKey, { data: parsedData, timestamp: Date.now() });
+          return parsedData;
         }
       }
     } catch (e) {
@@ -144,7 +159,7 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh
           continue; // Retry
         }
         if (response.status === 404) {
-          console.error(`[fetchFromApi] API endpoint not found (404): ${url}. If you deployed to Vercel/Netlify, your proxy server (server.ts) might not be running!`);
+          console.error(`[fetchFromApi] API endpoint not found (404): ${url}. The requested resource may not exist.`);
           return null; // Return null for 404 errors
         }
         if (response.status === 401 || response.status === 403) {
@@ -175,6 +190,11 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh
       }
 
       const resultToCache = hasPagination ? { results: finalData, next: nextUrl } : finalData;
+
+      // Save to memory cache
+      if (cacheKey) {
+        memoryCache.set(cacheKey, { data: resultToCache, timestamp: Date.now() });
+      }
 
       // 2. Save to Supabase Cache
       if (cacheKey && supabase && resultToCache) {
@@ -217,6 +237,14 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh
 }
 
 
+export const getMemoryCache = (cacheKey) => {
+  const cached = memoryCache.get(cacheKey);
+  if (cached && (Date.now() - cached.timestamp < MEMORY_CACHE_TTL)) {
+    return cached.data;
+  }
+  return null;
+};
+
 // Sync predictions to Supabase
 const syncPredictionsToSupabase = async (predictions) => {
   if (!supabase) return;
@@ -236,18 +264,31 @@ const syncPredictionsToSupabase = async (predictions) => {
   if (error) console.error('Error syncing predictions to Supabase:', error);
 };
 
-export const getPredictions = async (params = {}, forceRefresh = false) => {
-  console.log(`[getPredictions] Called with params:`, params, `forceRefresh:`, forceRefresh);
-  
-  // If no data in Supabase, data is stale, or forceRefresh is true, fetch from API
+export const getPredictionsCacheKey = (params = {}) => {
   const sortedParams = Object.keys(params).sort().reduce((acc, key) => {
-    acc[key] = params[key];
+    if (key !== 'paginate') {
+      acc[key] = params[key];
+    }
     return acc;
   }, {});
   
   const query = new URLSearchParams(sortedParams).toString();
-  const endpoint = `/predictions${query ? `?${query}` : ''}`;
-  const cacheKey = `preds_${query || 'all'}`;
+  return `preds_${query || 'all'}`;
+};
+
+export const getPredictions = async (params = {}, forceRefresh = false) => {
+  console.log(`[getPredictions] Called with params:`, params, `forceRefresh:`, forceRefresh);
+  
+  // If no data in Supabase, data is stale, or forceRefresh is true, fetch from API
+  const cacheKey = getPredictionsCacheKey(params);
+  const sortedParams = Object.keys(params).sort().reduce((acc, key) => {
+    if (key !== 'paginate') {
+      acc[key] = params[key];
+    }
+    return acc;
+  }, {});
+  const query = new URLSearchParams(sortedParams).toString();
+  const endpoint = `/predictions/${query ? `?${query}` : ''}`;
   
   console.log(`[getPredictions] Fetching from API endpoint: ${endpoint}`);
   
@@ -257,6 +298,13 @@ export const getPredictions = async (params = {}, forceRefresh = false) => {
     let allResults = [];
     
     if (result && result.results) {
+      if (params.paginate) {
+        // If pagination is explicitly requested, return the paginated result
+        // Sync to Supabase in background
+        syncPredictionsToSupabase(result.results).catch(console.error);
+        return result;
+      }
+
       allResults = [...result.results];
       let nextUrl = result.next;
       
@@ -267,7 +315,7 @@ export const getPredictions = async (params = {}, forceRefresh = false) => {
         console.log(`[getPredictions] Fetching page ${pageCount + 1}...`);
         // Extract the query string from the nextUrl
         const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
-        const nextEndpoint = `/predictions${nextQuery ? `?${nextQuery}` : ''}`;
+        const nextEndpoint = `/predictions/${nextQuery ? `?${nextQuery}` : ''}`;
         const nextCacheKey = `preds_${nextQuery || 'page'}`;
         
         const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey, 2, forceRefresh);
@@ -304,7 +352,7 @@ export const getEvents = async (params = {}, forceRefresh = false) => {
   }, {});
 
   const query = new URLSearchParams(sortedParams).toString();
-  const endpoint = `/events${query ? `?${query}` : ''}`;
+  const endpoint = `/events/${query ? `?${query}` : ''}`;
   const cacheKey = `events_${query || 'all'}`;
   
   let result = await fetchFromApi(endpoint, cacheKey, 2, forceRefresh);
@@ -320,7 +368,7 @@ export const getEvents = async (params = {}, forceRefresh = false) => {
       pageCount++;
       // Extract the query string from the nextUrl
       const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
-      const nextEndpoint = `/events${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextEndpoint = `/events/${nextQuery ? `?${nextQuery}` : ''}`;
       const nextCacheKey = `events_${nextQuery || 'page'}`;
       
       const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey, 2, forceRefresh);
@@ -339,7 +387,7 @@ export const getEvents = async (params = {}, forceRefresh = false) => {
 };
 
 export const getLiveMatches = async () => {
-  let result = await fetchFromApi('/live', 'live_matches');
+  let result = await fetchFromApi('/live/', 'live_matches');
   let allResults = [];
   
   if (result && result.results) {
@@ -350,7 +398,7 @@ export const getLiveMatches = async () => {
     while (nextUrl && pageCount < 20) {
       pageCount++;
       const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
-      const nextEndpoint = `/live${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextEndpoint = `/live/${nextQuery ? `?${nextQuery}` : ''}`;
       const nextCacheKey = `live_matches_${nextQuery || 'page'}`;
       
       const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey);
@@ -369,7 +417,7 @@ export const getLiveMatches = async () => {
 };
 
 export const getLeagues = async () => {
-  let result = await fetchFromApi('/leagues', 'leagues_list');
+  let result = await fetchFromApi('/leagues/', 'leagues_list');
   let allResults = [];
   
   if (result && result.results) {
@@ -380,7 +428,7 @@ export const getLeagues = async () => {
     while (nextUrl && pageCount < 20) {
       pageCount++;
       const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
-      const nextEndpoint = `/leagues${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextEndpoint = `/leagues/${nextQuery ? `?${nextQuery}` : ''}`;
       const nextCacheKey = `leagues_list_${nextQuery || 'page'}`;
       
       const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey);
@@ -400,7 +448,7 @@ export const getLeagues = async () => {
 
 export const getMatchDetails = async (id) => {
   const cacheKey = `match_${id}`;
-  return fetchFromApi(`/predictions/${id}`, cacheKey);
+  return fetchFromApi(`/predictions/${id}/`, cacheKey);
 };
 
 export const getTeamLogoUrl = (apiId) => {

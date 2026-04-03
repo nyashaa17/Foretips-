@@ -12,16 +12,41 @@ export default function Layout() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    const syncProfile = async (currentUser) => {
+      if (!currentUser) return;
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('id', currentUser.id)
+          .maybeSingle();
+          
+        if (!profile) {
+          const email = currentUser.email || '';
+          const username = currentUser.user_metadata?.user_name || currentUser.user_metadata?.full_name || currentUser.user_metadata?.name || email.split('@')[0] || 'user';
+          
+          await supabase.from('profiles').upsert([{ 
+            id: currentUser.id, 
+            username: username
+          }]);
+        }
+      } catch (err) {
+        console.error('Error syncing profile:', err);
+      }
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setIsAdmin(currentUser?.email === 'admin@foretips.co.zw');
+      if (currentUser) syncProfile(currentUser);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setIsAdmin(currentUser?.email === 'admin@foretips.co.zw');
+      if (currentUser) syncProfile(currentUser);
     });
 
     return () => subscription.unsubscribe();
@@ -34,7 +59,7 @@ export default function Layout() {
 
   return (
     <div className="flex min-h-screen bg-slate-50">
-      <Sidebar user={user} isAdmin={isAdmin} handleSignOut={handleSignOut} />
+      {user && <Sidebar user={user} isAdmin={isAdmin} handleSignOut={handleSignOut} />}
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
         <main className="flex-1">
