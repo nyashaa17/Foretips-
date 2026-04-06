@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { getMatchDetails, saveToHistory, getTeamLogoUrl, getLeagueLogoUrl } from '../services/api';
+import { getMatchDetails, getPredictionByEventId, getEventDetails, getLiveMatchDetails, getPlayerStats, saveToHistory, getTeamLogoUrl, getLeagueLogoUrl } from '../services/api';
 import { format } from 'date-fns';
-import { ChevronLeft, TrendingUp, Activity, Target, Shield, Sparkles, Trophy, Clock, Info } from 'lucide-react';
+import { ChevronLeft, TrendingUp, Activity, Target, Shield, Sparkles, Trophy, Clock, Info, Flag, Users } from 'lucide-react';
 import SEO from '../components/SEO';
 import clsx from 'clsx';
 import { GoogleGenAI } from "@google/genai";
@@ -12,6 +12,7 @@ import ReactMarkdown from 'react-markdown';
 import NotFound from './NotFound';
 
 import SmartLogo from '../components/SmartLogo';
+import MatchSpatialData from '../components/MatchSpatialData';
 
 const StatBar = ({ label, home, away, type = 'percentage' }) => {
   const homeVal = parseFloat(home) || 0;
@@ -47,6 +48,8 @@ export default function MatchDetails() {
   const initialPrediction = location.state?.prediction || null;
   
   const [match, setMatch] = useState(initialPrediction);
+  const [eventDetails, setEventDetails] = useState(null);
+  const [playerStats, setPlayerStats] = useState([]);
   const [loading, setLoading] = useState(!initialPrediction);
   const [error, setError] = useState(null);
   const [aiAnalysis, setAiAnalysis] = useState('');
@@ -56,14 +59,82 @@ export default function MatchDetails() {
     const fetchMatch = async () => {
       try {
         if (!initialPrediction) setLoading(true);
-        const data = await getMatchDetails(id);
+        
+        const isEventRoute = location.pathname.startsWith('/event/');
+        let data = null;
+        
+        if (isEventRoute) {
+          data = await getPredictionByEventId(id);
+          if (!data) {
+            // Try event details first to get the status
+            let eventData = await getEventDetails(id);
+            
+            // If it's live, fetch the live details to get incidents and live_stats
+            if (eventData) {
+              const status = eventData.status?.toLowerCase();
+              const isLive = ['inprogress', '1st_half', 'halftime', '2nd_half'].includes(status);
+              
+              if (isLive) {
+                const liveData = await getLiveMatchDetails(id);
+                if (liveData) {
+                  eventData = liveData;
+                }
+              }
+              data = { event: eventData, event_id: id };
+            }
+          }
+        } else {
+          data = await getMatchDetails(id);
+        }
+
+        // Fallback to initialPrediction if API returns null (e.g. 404 for live matches)
+        if (!data && initialPrediction) {
+          data = initialPrediction;
+        }
+
         if (!data) {
           setError('Match details not found.');
           setMatch(null);
         } else {
           setMatch(data);
-          saveToHistory(data);
-          generateAiAnalysis(data);
+          if (!isEventRoute || data.id) {
+            saveToHistory(data);
+          }
+          if (data.id) {
+            generateAiAnalysis(data);
+          }
+          
+          // Fetch comprehensive event details
+          const eventId = data.event?.id || data.event_id;
+          if (eventId) {
+            try {
+              let eventData = data.event;
+              const status = eventData?.status?.toLowerCase();
+              const isLive = ['inprogress', '1st_half', 'halftime', '2nd_half'].includes(status);
+              
+              if (isLive) {
+                const liveData = await getLiveMatchDetails(eventId);
+                if (liveData) {
+                  eventData = liveData;
+                }
+              } else if (!eventData || !eventData.league) {
+                // Only fetch event details if we don't already have them fully populated
+                const fullEventData = await getEventDetails(eventId);
+                if (fullEventData) {
+                  eventData = fullEventData;
+                }
+              }
+              
+              const pStatsData = await getPlayerStats(eventId);
+              
+              setEventDetails(eventData);
+              if (pStatsData?.results) {
+                setPlayerStats(pStatsData.results);
+              }
+            } catch (e) {
+              console.warn('Failed to fetch event details or player stats:', e);
+            }
+          }
         }
       } catch (err) {
         if (!initialPrediction) setError(err.message || 'Failed to load match details.');
@@ -74,7 +145,7 @@ export default function MatchDetails() {
     };
 
     fetchMatch();
-  }, [id, initialPrediction]);
+  }, [id, initialPrediction, location.pathname]);
 
   const generateAiAnalysis = async (matchData) => {
     if (!matchData) return;
@@ -284,7 +355,11 @@ export default function MatchDetails() {
 
       <AdPlacement position="in-article" />
 
-      {/* Prediction Data */}
+      {/* Spatial Data */}
+      {eventDetails && (
+        <MatchSpatialData event={eventDetails} />
+      )}
+
       {prediction && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           {/* Main Prediction */}
@@ -407,6 +482,103 @@ export default function MatchDetails() {
               )}
             </div>
 
+            {/* Player Stats */}
+            {playerStats && playerStats.length > 0 && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mt-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-slate-900 p-2 rounded-lg">
+                    <Users className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Player Stats</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm text-left text-slate-500">
+                    <thead className="text-xs text-slate-700 uppercase bg-slate-50">
+                      <tr>
+                        <th className="px-4 py-3 rounded-tl-lg">Player</th>
+                        <th className="px-4 py-3">Mins</th>
+                        <th className="px-4 py-3">Goals</th>
+                        <th className="px-4 py-3">Assists</th>
+                        <th className="px-4 py-3">Shots (OT)</th>
+                        <th className="px-4 py-3">Passes</th>
+                        <th className="px-4 py-3">Tackles</th>
+                        <th className="px-4 py-3 rounded-tr-lg">Rating</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {playerStats.map((stat, idx) => (
+                        <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
+                          <td className="px-4 py-3 font-medium text-slate-900">
+                            {stat.player?.id ? (
+                              <Link to={`/player/${stat.player.id}`} className="hover:text-blue-600 hover:underline">
+                                {stat.player?.name || `Player ${idx + 1}`}
+                              </Link>
+                            ) : (
+                              stat.player?.name || `Player ${idx + 1}`
+                            )}
+                          </td>
+                          <td className="px-4 py-3">{stat.minutes_played || 0}'</td>
+                          <td className="px-4 py-3 font-medium text-green-600">{stat.goals || 0}</td>
+                          <td className="px-4 py-3 text-blue-600">{stat.goal_assist || 0}</td>
+                          <td className="px-4 py-3">{stat.total_shots || 0} ({stat.shots_on_target || 0})</td>
+                          <td className="px-4 py-3">{stat.accurate_pass || 0}/{stat.total_pass || 0}</td>
+                          <td className="px-4 py-3">{stat.won_tackle || 0}/{stat.total_tackle || 0}</td>
+                          <td className="px-4 py-3">
+                            <span className={clsx(
+                              "px-2 py-1 rounded text-xs font-bold",
+                              stat.rating >= 8 ? "bg-green-100 text-green-700" :
+                              stat.rating >= 7 ? "bg-blue-100 text-blue-700" :
+                              stat.rating >= 6 ? "bg-yellow-100 text-yellow-700" :
+                              "bg-slate-100 text-slate-700"
+                            )}>
+                              {stat.rating ? parseFloat(stat.rating).toFixed(1) : 'N/A'}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {/* Shotmap */}
+            {eventDetails?.shotmap && eventDetails.shotmap.length > 0 && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mt-8">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="bg-slate-900 p-2 rounded-lg">
+                    <Target className="w-5 h-5 text-white" />
+                  </div>
+                  <h3 className="text-xl font-bold text-slate-900">Shotmap</h3>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {eventDetails.shotmap.map((shot, idx) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
+                      <div>
+                        {shot.player?.id || shot.pid ? (
+                          <Link to={`/player/${shot.player?.id || shot.pid}`} className="font-bold text-slate-800 hover:text-blue-600 hover:underline block">
+                            {shot.player?.name || `Player ${shot.pid || 'Unknown'}`}
+                          </Link>
+                        ) : (
+                          <p className="font-bold text-slate-800">{shot.player?.name || `Player ${shot.pid || 'Unknown'}`}</p>
+                        )}
+                        <p className="text-xs text-slate-500">{shot.sit || shot.situation || 'Open Play'} • {shot.body || shot.body_part || 'Foot'}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold text-slate-800">{shot.xg ? shot.xg.toFixed(2) : '-'} xG</p>
+                        <p className={clsx(
+                          "text-xs font-bold",
+                          (shot.type === 'goal' || shot.is_goal) ? "text-green-600" : "text-slate-500"
+                        )}>
+                          {(shot.type === 'goal' || shot.is_goal) ? 'Goal' : (shot.type || 'Miss')}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* AI Analysis */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm relative overflow-hidden">
               <div className="absolute top-0 right-0 p-4 opacity-10">
@@ -434,8 +606,8 @@ export default function MatchDetails() {
             </div>
 
             {/* Match Stats */}
-            {match.stats && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+            {(match.stats || eventDetails?.statistics) && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mt-8">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-slate-900 p-2 rounded-lg">
                     <Activity className="w-5 h-5 text-white" />
@@ -445,31 +617,31 @@ export default function MatchDetails() {
                 <div className="space-y-6">
                   <StatBar 
                     label="Possession" 
-                    home={match.stats.possession?.home || 0} 
-                    away={match.stats.possession?.away || 0} 
+                    home={match.stats?.possession?.home || eventDetails?.statistics?.possession?.home || 0} 
+                    away={match.stats?.possession?.away || eventDetails?.statistics?.possession?.away || 0} 
                   />
                   <StatBar 
                     label="Shots on Target" 
-                    home={match.stats.shots_on_target?.home || 0} 
-                    away={match.stats.shots_on_target?.away || 0} 
+                    home={match.stats?.shots_on_target?.home || eventDetails?.statistics?.shots_on_target?.home || 0} 
+                    away={match.stats?.shots_on_target?.away || eventDetails?.statistics?.shots_on_target?.away || 0} 
                     type="count"
                   />
                   <StatBar 
                     label="Total Shots" 
-                    home={match.stats.total_shots?.home || 0} 
-                    away={match.stats.total_shots?.away || 0} 
+                    home={match.stats?.total_shots?.home || eventDetails?.statistics?.total_shots?.home || 0} 
+                    away={match.stats?.total_shots?.away || eventDetails?.statistics?.total_shots?.away || 0} 
                     type="count"
                   />
                   <StatBar 
                     label="Corners" 
-                    home={match.stats.corners?.home || 0} 
-                    away={match.stats.corners?.away || 0} 
+                    home={match.stats?.corners?.home || eventDetails?.statistics?.corners?.home || 0} 
+                    away={match.stats?.corners?.away || eventDetails?.statistics?.corners?.away || 0} 
                     type="count"
                   />
                   <StatBar 
                     label="Fouls" 
-                    home={match.stats.fouls?.home || 0} 
-                    away={match.stats.fouls?.away || 0} 
+                    home={match.stats?.fouls?.home || eventDetails?.statistics?.fouls?.home || 0} 
+                    away={match.stats?.fouls?.away || eventDetails?.statistics?.fouls?.away || 0} 
                     type="count"
                   />
                 </div>

@@ -21,11 +21,11 @@ export default function Footer() {
               Leading the way in data-driven football analysis. Our machine learning models process thousands of data points to bring you the most accurate match predictions and insights.
             </p>
             <div className="flex items-center gap-4">
-              <a href="#" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all">
+              <a href="https://x.com/Foretips_Zw" target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/c/ce/X_logo_2023.svg" alt="X (Twitter)" className="w-5 h-5" />
               </a>
-              <a href="#" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-all">
-                <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Instagram_logo_2016.svg" alt="Instagram" className="w-5 h-5" />
+              <a href="https://t.me/foretips" target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-blue-500 hover:text-white transition-all">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/8/82/Telegram_logo.svg" alt="Telegram" className="w-5 h-5" />
               </a>
               <a href="https://whatsapp.com/channel/0029Vb7MXnXKLaHohHn7do3q" target="_blank" rel="noopener noreferrer" className="p-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-green-500 hover:text-white transition-all">
                 <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-5 h-5" />
@@ -85,9 +85,9 @@ export default function Footer() {
                 </Link>
               </li>
               <li>
-                <a href="mailto:support@foretips.com" className="hover:text-green-600 transition-colors flex items-center gap-2">
+                <a href="mailto:Foretips@proton.me" className="hover:text-green-600 transition-colors flex items-center gap-2" title="Report issues, feature requests, and other things">
                   <Mail className="w-4 h-4" />
-                  Contact Support
+                  Contact Support / Features
                 </a>
               </li>
               <li>

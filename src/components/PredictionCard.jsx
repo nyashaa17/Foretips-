@@ -56,11 +56,12 @@ export default function PredictionCard({ prediction }) {
   };
 
   const hasActualScore = event.home_score !== undefined && event.away_score !== undefined && event.home_score !== null && event.away_score !== null;
-  const isMatchFinished = event.status === 'Finished' || event.status === 'FT' || hasActualScore;
+  const isMatchFinished = ['finished', 'Finished', 'FT', 'AET', 'PEN'].includes(event.status);
+  const isMatchLive = ['inprogress', '1st_half', 'halftime', '2nd_half', 'LIVE', 'HT'].includes(event.status);
 
   let actualResult = null;
   let predictionCorrect = null;
-  if (hasActualScore) {
+  if (hasActualScore && isMatchFinished) {
     if (event.home_score > event.away_score) actualResult = 'H';
     else if (event.home_score < event.away_score) actualResult = 'A';
     else actualResult = 'D';
@@ -149,8 +150,13 @@ export default function PredictionCard({ prediction }) {
             ) : (
               <div className="text-[10px] font-black text-slate-300">VS</div>
             )}
-            {isMatchFinished && !hasActualScore && (
+            {isMatchFinished && (
               <div className="text-[9px] font-bold text-slate-400 mt-1 uppercase tracking-wider">FT</div>
+            )}
+            {isMatchLive && (
+              <div className="text-[9px] font-bold text-red-500 mt-1 uppercase tracking-wider animate-pulse">
+                {event.current_minute ? `${event.current_minute}'` : 'LIVE'}
+              </div>
             )}
           </div>
 
@@ -171,11 +177,17 @@ export default function PredictionCard({ prediction }) {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Pick</span>
-              {predictionCorrect === true && (
+              {isMatchFinished && predictionCorrect === true && (
                 <span className="bg-green-100 text-green-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Won</span>
               )}
-              {predictionCorrect === false && (
+              {isMatchFinished && predictionCorrect === false && (
                 <span className="bg-red-100 text-red-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Lost</span>
+              )}
+              {isMatchLive && (
+                <span className="bg-blue-100 text-blue-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider flex items-center gap-1">
+                  <span className="w-1.5 h-1.5 bg-blue-500 rounded-full animate-pulse"></span>
+                  In Play
+                </span>
               )}
             </div>
             <span className={clsx("text-sm font-black", getResultColor(predicted_result))}>

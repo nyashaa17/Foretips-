@@ -2,12 +2,24 @@ import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import SEO from '../components/SEO';
 import { useNavigate } from 'react-router-dom';
-import { ShieldCheck, AlertCircle, RefreshCw } from 'lucide-react';
+import { ShieldCheck, AlertCircle, RefreshCw, ChevronDown } from 'lucide-react';
+import MatchSelector from '../components/MatchSelector';
 
 export default function SubmitTip() {
   const [matches, setMatches] = useState([]);
   const [selectedMatch, setSelectedMatch] = useState('');
+  const [showMatchSelector, setShowMatchSelector] = useState(false);
   const [fetchingMatches, setFetchingMatches] = useState(false);
+
+  // ... (rest of the state)
+
+  const handleMatchSelect = (eventId) => {
+    setSelectedMatch(eventId);
+    
+    // Call the original logic to populate fields
+    const e = { target: { value: eventId } };
+    handleMatchChange(e);
+  };
 
   const [homeTeam, setHomeTeam] = useState('');
   const [awayTeam, setAwayTeam] = useState('');
@@ -299,27 +311,29 @@ export default function SubmitTip() {
             <span>Select Match</span>
             {fetchingMatches && <span className="text-xs text-blue-600 flex items-center gap-1"><RefreshCw className="w-3 h-3 animate-spin" /> Fetching live matches...</span>}
           </label>
-          <select
-            value={selectedMatch}
-            onChange={handleMatchChange}
-            className="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-green-500 outline-none bg-white"
+          <button
+            type="button"
+            onClick={() => setShowMatchSelector(true)}
+            className="w-full p-3 rounded-lg border border-slate-300 focus:ring-2 focus:ring-green-500 outline-none bg-white text-left flex items-center justify-between"
             disabled={fetchingMatches}
-            required
           >
-            <option value="">-- Select an upcoming match --</option>
-            {matches.map(m => {
-              const date = new Date(m.strTimestamp);
-              const day = date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-              const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-              return (
-                <option key={m.idEvent} value={m.idEvent}>
-                  {m.strEvent} ({day} {time})
-                </option>
-              );
-            })}
-            <option value="custom">Custom Match (Manual Entry)</option>
-          </select>
+            <span className={selectedMatch ? 'text-slate-900' : 'text-slate-500'}>
+              {selectedMatch 
+                ? (selectedMatch === 'custom' ? 'Custom Match (Manual Entry)' : matches.find(m => m.idEvent === selectedMatch)?.strEvent || 'Selected')
+                : '-- Select an upcoming match --'}
+            </span>
+            <ChevronDown className="w-5 h-5 text-slate-400" />
+          </button>
         </div>
+
+        {showMatchSelector && (
+          <MatchSelector
+            matches={matches}
+            selectedMatch={selectedMatch}
+            onSelect={handleMatchSelect}
+            onClose={() => setShowMatchSelector(false)}
+          />
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <div>

@@ -59,7 +59,7 @@ export default function LiveMatchCard({ match }) {
 
   return (
     <Link 
-      to={`/match/${id}`}
+      to={`/event/${id}`}
       className="block bg-white rounded-xl border border-red-200 overflow-hidden hover:border-red-400 transition-colors relative shadow-sm"
     >
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>

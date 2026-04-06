@@ -21,32 +21,52 @@ const MatchPollCarousel = lazy(() => import('../components/MatchPollCarousel'));
 export default function Home() {
   const [dateFilter, setDateFilter] = useState('today'); // 'yesterday', 'today', 'tomorrow'
   
-  // Initialize state from cache if available
-  const [predictions, setPredictions] = useState(() => {
-    const cacheKey = getPredictionsCacheKey({ upcoming: true });
-    const cached = getMemoryCache(cacheKey);
-    return Array.isArray(cached) ? cached : (cached?.results || []);
-  });
-  const [loading, setLoading] = useState(() => {
-    const cacheKey = getPredictionsCacheKey({ upcoming: true });
-    const cached = getMemoryCache(cacheKey);
-    return !cached;
-  });
+  const [predictions, setPredictions] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const predictionsRef = useRef(null);
+
+  const loadPredictions = async (filter) => {
+    try {
+      const date = new Date();
+      if (filter === 'yesterday') {
+        date.setDate(date.getDate() - 1);
+      } else if (filter === 'tomorrow') {
+        date.setDate(date.getDate() + 1);
+      }
+      const dateStr = date.toISOString().split('T')[0];
+      
+      const params = { date_from: dateStr, date_to: dateStr };
+      if (filter === 'yesterday') {
+        params.upcoming = false;
+      }
+
+      const cacheKey = getPredictionsCacheKey(params);
+      const cached = getMemoryCache(cacheKey);
+      
+      // Only show loading state if we don't have cached data
+      if (!cached) {
+        setLoading(true);
+      }
+      setError(null);
+
+      const predsData = await getPredictions(params);
+      setPredictions(predsData || []);
+    } catch (err) {
+      setError(err.message || 'Failed to load data. Please try again later.');
+      console.error('Error loading predictions:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPredictions(dateFilter);
+  }, [dateFilter]);
 
   const featuredPredictions = useMemo(() => {
     if (!Array.isArray(predictions)) return [];
     let result = [...predictions];
-
-    // Apply Date Filter
-    if (dateFilter === 'yesterday') {
-      result = filterYesterdayMatches(result);
-    } else if (dateFilter === 'today') {
-      result = filterTodayMatches(result);
-    } else if (dateFilter === 'tomorrow') {
-      result = filterTomorrowMatches(result);
-    }
 
     // Sort by Major Leagues and High Confidence
     const MAJOR_LEAGUES = ['premier league', 'la liga', 'serie a', 'bundesliga', 'ligue 1', 'champions league', 'europa league', 'world cup'];
@@ -71,34 +91,9 @@ export default function Home() {
       return bScore - aScore;
     });
 
-    // Take top 5 featured matches
-    return result.slice(0, 5);
-  }, [predictions, dateFilter]);
-
-  const loadPredictions = async () => {
-    try {
-      const cacheKey = getPredictionsCacheKey({ upcoming: true });
-      const cached = getMemoryCache(cacheKey);
-      
-      // Only show loading state if we don't have cached data
-      if (!cached) {
-        setLoading(true);
-      }
-      setError(null);
-
-      const predsData = await getPredictions({ upcoming: true });
-      setPredictions(predsData || []);
-    } catch (err) {
-      setError(err.message || 'Failed to load data. Please try again later.');
-      console.error('Error loading predictions:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadPredictions();
-  }, []);
+    // Take top 10 featured matches
+    return result.slice(0, 10);
+  }, [predictions]);
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-12">
@@ -241,7 +236,7 @@ export default function Home() {
           <>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {loading ? (
-                Array.from({ length: 5 }).map((_, i) => <PredictionSkeleton key={i} />)
+                Array.from({ length: 10 }).map((_, i) => <PredictionSkeleton key={i} />)
               ) : featuredPredictions.length > 0 ? (
                 featuredPredictions.map((prediction, index) => [
                   <PredictionCard key={`${prediction.id}-${index}`} prediction={prediction} />,

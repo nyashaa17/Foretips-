@@ -59,7 +59,7 @@ export default function PrivacyPolicy() {
         <p>We may update this Privacy Policy from time to time. Changes will be posted on this page.</p>
 
         <h2 className="text-2xl font-bold text-slate-900">9. Contact Us</h2>
-        <p>If you have any questions, contact us at: <a href="mailto:ForetipsAI@gmail.com" className="text-green-600 hover:underline">ForetipsAI@gmail.com</a></p>
+        <p>If you have any questions, contact us at: <a href="mailto:Foretips@proton.me" className="text-green-600 hover:underline">Foretips@proton.me</a></p>
       </div>
     </div>
   );

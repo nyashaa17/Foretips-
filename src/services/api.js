@@ -159,8 +159,9 @@ async function fetchFromApi(endpoint, cacheKey = null, retries = 2, forceRefresh
           continue; // Retry
         }
         if (response.status === 404) {
-          console.error(`[fetchFromApi] API endpoint not found (404): ${url}. The requested resource may not exist.`);
-          return null; // Return null for 404 errors
+          // 404s are expected for some endpoints (e.g., checking if a match is live, or if a prediction exists)
+          // We return null and let the calling code handle the fallback gracefully.
+          return null; 
         }
         if (response.status === 401 || response.status === 403) {
           console.error(`[fetchFromApi] API Authentication failed (${response.status}). Please check your API key for ${url}`);
@@ -449,6 +450,96 @@ export const getLeagues = async () => {
 export const getMatchDetails = async (id) => {
   const cacheKey = `match_${id}`;
   return fetchFromApi(`/predictions/${id}/`, cacheKey);
+};
+
+export const getPredictionByEventId = async (eventId) => {
+  const cacheKey = `prediction_event_${eventId}`;
+  const data = await fetchFromApi(`/predictions/?event=${eventId}`, cacheKey);
+  if (data && data.results && data.results.length > 0) {
+    return data.results[0];
+  }
+  return null;
+};
+
+export const getLiveMatchDetails = async (id) => {
+  const cacheKey = `live_match_${id}`;
+  return fetchFromApi(`/live/${id}/`, cacheKey, 1, true); // force refresh for live data
+};
+
+export const getEventDetails = async (id) => {
+  const cacheKey = `event_${id}`;
+  return fetchFromApi(`/events/${id}/`, cacheKey);
+};
+
+export const getPlayerStats = async (eventId) => {
+  const cacheKey = `player_stats_${eventId}`;
+  return fetchFromApi(`/player-stats/?event=${eventId}`, cacheKey);
+};
+
+export const getPlayerProfile = async (playerId) => {
+  const cacheKey = `player_profile_${playerId}`;
+  return fetchFromApi(`/players/${playerId}/`, cacheKey);
+};
+
+export const getPlayerMatchStats = async (playerId) => {
+  const cacheKey = `player_match_stats_${playerId}`;
+  let result = await fetchFromApi(`/player-stats/?player=${playerId}`, cacheKey);
+  
+  let allResults = [];
+  if (result && result.results) {
+    allResults = [...result.results];
+    let nextUrl = result.next;
+    
+    let pageCount = 0;
+    while (nextUrl && pageCount < 5) { // Limit to 5 pages for match stats
+      pageCount++;
+      const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
+      const nextEndpoint = `/player-stats/${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextCacheKey = `player_match_stats_${playerId}_page_${pageCount}`;
+      
+      const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey);
+      if (nextResult && nextResult.results) {
+        allResults = [...allResults, ...nextResult.results];
+        if (nextResult.next === nextUrl) break;
+        nextUrl = nextResult.next;
+      } else {
+        nextUrl = null;
+      }
+    }
+    return allResults;
+  }
+  return result;
+};
+
+export const getSquad = async (teamId, isNational = false) => {
+  const queryParam = isNational ? 'national_team' : 'team';
+  const cacheKey = `squad_${queryParam}_${teamId}`;
+  let result = await fetchFromApi(`/players/?${queryParam}=${teamId}`, cacheKey);
+  
+  let allResults = [];
+  if (result && result.results) {
+    allResults = [...result.results];
+    let nextUrl = result.next;
+    
+    let pageCount = 0;
+    while (nextUrl && pageCount < 10) {
+      pageCount++;
+      const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
+      const nextEndpoint = `/players/${nextQuery ? `?${nextQuery}` : ''}`;
+      const nextCacheKey = `squad_${queryParam}_${teamId}_page_${pageCount}`;
+      
+      const nextResult = await fetchFromApi(nextEndpoint, nextCacheKey);
+      if (nextResult && nextResult.results) {
+        allResults = [...allResults, ...nextResult.results];
+        if (nextResult.next === nextUrl) break;
+        nextUrl = nextResult.next;
+      } else {
+        nextUrl = null;
+      }
+    }
+    return allResults;
+  }
+  return result;
 };
 
 export const getTeamLogoUrl = (apiId) => {

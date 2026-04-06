@@ -51,6 +51,7 @@ export default function App() {
               <Route path="/team/:teamId" element={<TeamDetails />} />
               <Route path="/player/:playerId" element={<PlayerDetails />} />
               <Route path="/match/:id" element={<MatchDetails />} />
+              <Route path="/event/:id" element={<MatchDetails />} />
               <Route path="/signin" element={<SignIn />} />
               <Route path="/signup" element={<SignUp />} />
               <Route path="/submit-tip" element={<SubmitTip />} />
