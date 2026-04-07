@@ -148,7 +148,7 @@ export default function Home() {
             transition={{ delay: 0.3, duration: 0.5 }}
             className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6 leading-tight"
           >
-            Data-Driven <br />
+            AI-Powered <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500">
               Football Tips
             </span>
@@ -160,7 +160,7 @@ export default function Home() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="text-lg text-slate-600 mb-8 max-w-xl mx-auto"
           >
-            Daily football tips, advanced match analysis, and data-driven insights to help you make smarter bets.
+            Daily AI football predictions, advanced match analysis, and data-driven insights to help you make smarter bets.
           </motion.p>
           
           <motion.div 

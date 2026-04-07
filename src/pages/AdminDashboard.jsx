@@ -16,8 +16,16 @@ export default function AdminDashboard() {
   const [filter, setFilter] = useState('pending'); // 'pending' or 'approved'
   const [modal, setModal] = useState({ isOpen: false, title: '', message: '', onConfirm: null });
   const [selectedTips, setSelectedTips] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    const checkAdmin = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.email === 'admin@foretips.co.zw') {
+        setIsAdmin(true);
+      }
+    };
+    checkAdmin();
     fetchTips();
     fetchFeaturedMatches();
   }, [filter]);
@@ -122,6 +130,31 @@ export default function AdminDashboard() {
         const { error } = await supabase.from('match_polls').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         if (error) alert('Error resetting polls: ' + error.message);
         else alert('All polls reset successfully.');
+      }
+    });
+  };
+
+  const resetLeaderboard = async () => {
+    if (!isAdmin) {
+      alert('Unauthorized: Only admins can perform this action.');
+      return;
+    }
+    
+    setModal({
+      isOpen: true,
+      title: 'Reset Leaderboard',
+      message: 'Are you sure you want to reset the leaderboard? This will clear all wins, tips, and success rates for every user. This cannot be undone.',
+      onConfirm: async () => {
+        try {
+          // Since leaderboard is derived from community_tips, we delete all tips to reset stats
+          const { error } = await supabase.from('community_tips').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+          if (error) throw error;
+          alert('Leaderboard has been reset successfully.');
+          fetchTips();
+          setModal({ ...modal, isOpen: false });
+        } catch (err) {
+          alert('Error resetting leaderboard: ' + err.message);
+        }
       }
     });
   };
@@ -339,6 +372,15 @@ export default function AdminDashboard() {
                   <Megaphone className="w-4 h-4 mr-2" />
                   Manage Ads
                 </Link>
+                {isAdmin && (
+                  <button 
+                    onClick={resetLeaderboard}
+                    className="flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-red-600 text-white hover:bg-red-700"
+                  >
+                    <AlertCircle className="w-4 h-4 mr-2" />
+                    Reset Leaderboard
+                  </button>
+                )}
                 <button 
                   onClick={() => setFilter('pending')}
                   className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${filter === 'pending' ? 'bg-slate-900 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}

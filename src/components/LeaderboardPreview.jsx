@@ -28,9 +28,11 @@ export default function LeaderboardPreview() {
               return {
                 username: p.username || 'Unknown User',
                 score: wonTips,
+                totalTips,
                 successRate
               };
             })
+            .filter(user => user.totalTips > 0)
             .sort((a, b) => b.score - a.score)
             .slice(0, 5);
             

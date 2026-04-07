@@ -28,19 +28,21 @@ export default function Leaderboard() {
 
         if (data) {
           // Calculate score based on 'won' tips
-          const scoredUsers = data.map(profile => {
-            const wonTips = profile.community_tips.filter(tip => tip.status === 'won').length;
-            const totalTips = profile.community_tips.length;
-            const successRate = totalTips > 0 ? Math.round((wonTips / totalTips) * 100) : 0;
-            
-            return {
-              id: profile.id,
-              username: profile.username || 'Unknown User',
-              score: wonTips,
-              totalTips,
-              successRate
-            };
-          });
+          const scoredUsers = data
+            .map(profile => {
+              const wonTips = profile.community_tips.filter(tip => tip.status === 'won').length;
+              const totalTips = profile.community_tips.length;
+              const successRate = totalTips > 0 ? Math.round((wonTips / totalTips) * 100) : 0;
+              
+              return {
+                id: profile.id,
+                username: profile.username || 'Unknown User',
+                score: wonTips,
+                totalTips,
+                successRate
+              };
+            })
+            .filter(user => user.totalTips > 0); // Only users with at least 1 tip
 
           // Sort by score (won tips) descending, then by success rate
           let sorted = scoredUsers
