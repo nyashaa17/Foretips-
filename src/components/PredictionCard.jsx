@@ -7,6 +7,8 @@ import clsx from 'clsx';
 import { Brain, Share2, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
 import * as htmlToImage from 'html-to-image';
+import { supabase } from '../supabaseClient';
+import { GoogleGenAI } from "@google/genai";
 
 import SmartLogo from './SmartLogo';
 
@@ -108,28 +110,70 @@ export default function PredictionCard({ prediction }) {
     
     const homeName = home_team?.name || 'Home Team';
     const awayName = away_team?.name || 'Away Team';
-    const pick = getResultLabel(predicted_result);
-    const conf = confidence ? `${Math.round(confidence)}%` : 'N/A';
-    
-    const over25 = prob_over_25 ? `${Math.round(prob_over_25)}%` : 'N/A';
-    const btts = prob_btts_yes ? `${Math.round(prob_btts_yes)}%` : 'N/A';
-    const score = most_likely_score || 'N/A';
-    
-    const odds1 = displayOdds.home || '-';
-    const oddsX = displayOdds.draw || '-';
-    const odds2 = displayOdds.away || '-';
-    
-    const text = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n🎯 Pick: ${pick}\n💪 Confidence: ${conf}\n\n📊 Probabilities:\nOver 2.5: ${over25}\nBTTS: ${btts}\nScore: ${score}\n\n🎲 Odds:\n1: ${odds1} | X: ${oddsX} | 2: ${odds2}\n\nCheck out full details here: ${window.location.origin}/match/${id}`;
+    const leagueName = league?.name || 'League';
     
     if (!cardRef.current) {
-      // Fallback if ref is missing
-      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const fallbackText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\nCheck out full details here: ${window.location.origin}/match/${id}`;
+      const url = `https://wa.me/?text=${encodeURIComponent(fallbackText)}`;
       window.open(url, '_blank');
       return;
     }
 
     try {
       setIsSharing(true);
+      
+      // 1. Try to get AI Analysis from cache or generate it
+      let aiAnalysisText = '';
+      const cacheKey = `ai_analysis_${id}`;
+      
+      try {
+        const { data: cached } = await supabase
+          .from('api_cache')
+          .select('data')
+          .eq('key', cacheKey)
+          .single();
+          
+        if (cached && cached.data) {
+          aiAnalysisText = cached.data;
+        } else {
+          // Generate on the fly if not cached
+          const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
+          const model = "gemini-3-flash-preview";
+          
+          const prompt = `As a professional football analyst, provide a detailed but concise analysis (max 60 words) for ${homeName} vs ${awayName} in the ${leagueName}. 
+          Consider these stats:
+          - ${homeName} win probability: ${prob_home_win}%
+          - Draw probability: ${prob_draw}%
+          - ${awayName} win probability: ${prob_away_win}%
+          - Confidence level: ${confidence}%
+          - Predicted score: ${most_likely_score}
+          - Over 2.5 Goals probability: ${prob_over_25}%
+          - Both Teams to Score probability: ${prob_btts_yes}%
+          
+          Structure the response with:
+          1. Key Insight: (One sentence on the tactical matchup)
+          2. Betting Value: (Where the best value lies based on probabilities vs odds)
+          3. Final Verdict: (The most likely outcome)`;
+
+          const response = await ai.models.generateContent({
+            model,
+            contents: prompt,
+          });
+
+          aiAnalysisText = response.text;
+          
+          // Save to cache in background
+          supabase.from('api_cache').upsert({ 
+            key: cacheKey, 
+            data: aiAnalysisText,
+            updated_at: new Date().toISOString()
+          }).then();
+        }
+      } catch (err) {
+        console.warn('Could not fetch or generate AI analysis for sharing:', err);
+      }
+
+      const captionText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\n${aiAnalysisText ? `🤖 AI Analysis:\n${aiAnalysisText}\n\n` : ''}Check out full details here: ${window.location.origin}/match/${id}`;
       
       // Capture the card as a blob using html-to-image
       const blob = await htmlToImage.toBlob(cardRef.current, {
@@ -148,13 +192,13 @@ export default function PredictionCard({ prediction }) {
           await navigator.share({
             files: [file],
             title: 'Foretips Prediction',
-            text: text,
+            text: captionText,
           });
         } catch (shareError) {
           console.log('Error sharing via Web Share API:', shareError);
           // Fallback to text only if user cancels or it fails
           if (shareError.name !== 'AbortError') {
-            const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            const url = `https://wa.me/?text=${encodeURIComponent(captionText)}`;
             window.open(url, '_blank');
           }
         }
@@ -167,11 +211,11 @@ export default function PredictionCard({ prediction }) {
         
         // Copy text to clipboard for convenience
         try {
-          await navigator.clipboard.writeText(text);
+          await navigator.clipboard.writeText(captionText);
           alert('Image downloaded and text copied to clipboard! You can now paste it into WhatsApp.');
         } catch (err) {
           // Just open WhatsApp with text
-          const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+          const url = `https://wa.me/?text=${encodeURIComponent(captionText)}`;
           window.open(url, '_blank');
         }
       }
@@ -180,8 +224,8 @@ export default function PredictionCard({ prediction }) {
     } catch (error) {
       console.error('Error generating image:', error);
       setIsSharing(false);
-      // Ultimate fallback: just text
-      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      const fallbackText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\nCheck out full details here: ${window.location.origin}/match/${id}`;
+      const url = `https://wa.me/?text=${encodeURIComponent(fallbackText)}`;
       window.open(url, '_blank');
     }
   };
