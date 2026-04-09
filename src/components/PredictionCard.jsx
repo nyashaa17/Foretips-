@@ -4,11 +4,16 @@ import { saveToHistory, getTeamLogoUrl, getLeagueLogoUrl } from '../services/api
 import { hapticFeedback } from '../utils/haptics';
 import { getPreviewUrl } from '../utils/image';
 import clsx from 'clsx';
-import { Brain } from 'lucide-react';
+import { Brain, Share2, Loader2 } from 'lucide-react';
+import { useRef, useState } from 'react';
+import * as htmlToImage from 'html-to-image';
 
 import SmartLogo from './SmartLogo';
 
 export default function PredictionCard({ prediction }) {
+  const cardRef = useRef(null);
+  const [isSharing, setIsSharing] = useState(false);
+
   console.log('Prediction object:', prediction);
   const {
     id,
@@ -96,10 +101,96 @@ export default function PredictionCard({ prediction }) {
     return 'text-slate-400';
   };
 
+  const handleShare = async (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    hapticFeedback('light');
+    
+    const homeName = home_team?.name || 'Home Team';
+    const awayName = away_team?.name || 'Away Team';
+    const pick = getResultLabel(predicted_result);
+    const conf = confidence ? `${Math.round(confidence)}%` : 'N/A';
+    
+    const over25 = prob_over_25 ? `${Math.round(prob_over_25)}%` : 'N/A';
+    const btts = prob_btts_yes ? `${Math.round(prob_btts_yes)}%` : 'N/A';
+    const score = most_likely_score || 'N/A';
+    
+    const odds1 = displayOdds.home || '-';
+    const oddsX = displayOdds.draw || '-';
+    const odds2 = displayOdds.away || '-';
+    
+    const text = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n🎯 Pick: ${pick}\n💪 Confidence: ${conf}\n\n📊 Probabilities:\nOver 2.5: ${over25}\nBTTS: ${btts}\nScore: ${score}\n\n🎲 Odds:\n1: ${odds1} | X: ${oddsX} | 2: ${odds2}\n\nCheck out full details here: ${window.location.origin}/match/${id}`;
+    
+    if (!cardRef.current) {
+      // Fallback if ref is missing
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+      return;
+    }
+
+    try {
+      setIsSharing(true);
+      
+      // Capture the card as a blob using html-to-image
+      const blob = await htmlToImage.toBlob(cardRef.current, {
+        quality: 1,
+        backgroundColor: '#ffffff',
+        pixelRatio: 2, // Higher quality
+      });
+
+      if (!blob) throw new Error('Failed to create image blob');
+      
+      const file = new File([blob], `foretips-${homeName}-vs-${awayName}.png`, { type: 'image/png' });
+      
+      // Check if Web Share API is supported and can share files
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({
+            files: [file],
+            title: 'Foretips Prediction',
+            text: text,
+          });
+        } catch (shareError) {
+          console.log('Error sharing via Web Share API:', shareError);
+          // Fallback to text only if user cancels or it fails
+          if (shareError.name !== 'AbortError') {
+            const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+            window.open(url, '_blank');
+          }
+        }
+      } else {
+        // Fallback for desktop/unsupported browsers: Download image and open WhatsApp Web
+        const link = document.createElement('a');
+        link.download = `foretips-${homeName}-vs-${awayName}.png`;
+        link.href = URL.createObjectURL(blob);
+        link.click();
+        
+        // Copy text to clipboard for convenience
+        try {
+          await navigator.clipboard.writeText(text);
+          alert('Image downloaded and text copied to clipboard! You can now paste it into WhatsApp.');
+        } catch (err) {
+          // Just open WhatsApp with text
+          const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+          window.open(url, '_blank');
+        }
+      }
+      setIsSharing(false);
+      
+    } catch (error) {
+      console.error('Error generating image:', error);
+      setIsSharing(false);
+      // Ultimate fallback: just text
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 transition-all group flex flex-col h-full">
-      {/* Header */}
-      <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+      <div ref={cardRef} className="flex flex-col flex-1 bg-white">
+        {/* Header */}
+        <div className="bg-slate-50 px-3 py-2 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
         <div className="flex items-center gap-2 truncate">
           <SmartLogo 
             urls={leagueLogos} 
@@ -256,9 +347,10 @@ export default function PredictionCard({ prediction }) {
           )}
         </div>
       </div>
+      </div>
 
       {/* Action */}
-      <div className="px-4 pb-4">
+      <div className="px-4 pb-4 flex gap-2">
         <Link 
           to={`/match/${id}`}
           state={{ prediction }}
@@ -266,10 +358,18 @@ export default function PredictionCard({ prediction }) {
             hapticFeedback('light');
             saveToHistory(prediction);
           }}
-          className="w-full py-2.5 bg-slate-900 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 group-hover:bg-green-500"
+          className="flex-1 py-2.5 bg-slate-900 hover:bg-green-500 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-2 group-hover:bg-green-500"
         >
           View Prediction
         </Link>
+        <button
+          onClick={handleShare}
+          disabled={isSharing}
+          className="w-10 h-10 shrink-0 bg-slate-100 hover:bg-[#25D366] hover:text-white text-slate-500 rounded-lg flex items-center justify-center transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Share to WhatsApp"
+        >
+          {isSharing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Share2 className="w-4 h-4" />}
+        </button>
       </div>
     </div>
   );
