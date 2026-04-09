@@ -38,6 +38,12 @@ export default function SEO({ title, description, keywords, image, type = 'websi
     const ogDescription = document.querySelector('meta[property="og:description"]');
     if (ogDescription) ogDescription.setAttribute('content', description || 'Advanced football match analysis and data-driven insights.');
 
+    const defaultImage = 'https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/og.webp';
+    const finalImage = image || defaultImage;
+
+    const ogImage = document.querySelector('meta[property="og:image"]');
+    if (ogImage) ogImage.setAttribute('content', finalImage);
+
     // Update Twitter tags
     const twitterTitle = document.querySelector('meta[name="twitter:title"]');
     if (twitterTitle) twitterTitle.setAttribute('content', fullTitle);
@@ -45,7 +51,10 @@ export default function SEO({ title, description, keywords, image, type = 'websi
     const twitterDescription = document.querySelector('meta[name="twitter:description"]');
     if (twitterDescription) twitterDescription.setAttribute('content', description || 'Advanced football match analysis and data-driven insights.');
 
-  }, [fullTitle, description, url]);
+    const twitterImage = document.querySelector('meta[name="twitter:image"]');
+    if (twitterImage) twitterImage.setAttribute('content', finalImage);
+
+  }, [fullTitle, description, url, image]);
 
   return null;
 }

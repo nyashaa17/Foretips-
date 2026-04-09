@@ -36,16 +36,6 @@ export default function LeaderboardPreview() {
             .sort((a, b) => b.score - a.score)
             .slice(0, 5);
             
-          // Pad to at least 3 users
-          while (sorted.length < 3) {
-            sorted.push({
-              username: 'Available Spot',
-              score: 0,
-              successRate: 0,
-              isPlaceholder: true
-            });
-          }
-            
           setLeaderboard(sorted);
         }
       } catch (error) {

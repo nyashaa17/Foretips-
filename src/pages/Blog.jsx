@@ -100,7 +100,7 @@ export default function Blog() {
                         {new Date(post.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                       </div>
                     </div>
-                    <h2 className="text-xl font-bold text-slate-900 mb-4 group-hover:text-green-600 transition-colors line-clamp-2">
+                    <h2 className="text-xl font-bold text-slate-900 mb-4 group-hover:text-green-600 transition-colors">
                       {post.title}
                     </h2>
                     <p className="text-slate-500 mb-6 leading-relaxed line-clamp-2 flex-grow">

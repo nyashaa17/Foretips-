@@ -61,7 +61,28 @@ export default function LeagueStandings({ leagueName, countryName }) {
 
         const standingsData = await standingsRes.json();
         
-        const entries = standingsData.children?.[0]?.standings?.entries;
+        let entries = standingsData.children?.[0]?.standings?.entries;
+
+        if (!entries || entries.length === 0) {
+          // Try fetching previous seasons if current is not available
+          const currentYear = new Date().getFullYear();
+          for (let year = currentYear; year >= currentYear - 2; year--) {
+            try {
+              const fallbackRes = await fetch(`https://site.api.espn.com/apis/v2/sports/soccer/${leagueCode}/standings?season=${year}`);
+              if (fallbackRes.ok) {
+                const fallbackData = await fallbackRes.json();
+                const fallbackEntries = fallbackData.children?.[0]?.standings?.entries;
+                if (fallbackEntries && fallbackEntries.length > 0) {
+                  entries = fallbackEntries;
+                  break;
+                }
+              }
+            } catch (fallbackErr) {
+              console.error(`Failed to fetch fallback standings for year ${year}`, fallbackErr);
+            }
+          }
+        }
+
         if (!entries || entries.length === 0) {
           throw new Error('Standings not available for this league.');
         }

@@ -3,6 +3,8 @@ import React from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import ReactMarkdown from 'react-markdown';
+import remarkBreaks from 'remark-breaks';
+import remarkGfm from 'remark-gfm';
 import NotFound from './NotFound';
 import { 
   Calendar, 
@@ -90,6 +92,45 @@ export default function BlogPost() {
     }
   ];
 
+  // Intelligently format text that might be missing line breaks
+  const formatContent = (text) => {
+    if (!text) return '';
+    
+    let formatted = text;
+    
+    // Always apply formatting to ensure consistency, especially for pasted text
+    
+    // Add newlines before common emojis that act as bullet points or section headers
+    formatted = formatted.replace(/([.!?])\s*(✅|👉|📊|💡|⚽|🎯|🔥|💰|🏆|📌|📝|🤔|👇)/g, '$1\n\n$2 ');
+    
+    // Format checkmarks as lists
+    formatted = formatted.replace(/([.!?])\s*(✔|✓)/g, '$1\n\n- ');
+    
+    // Replace inline checkmarks with list items if they follow a space
+    formatted = formatted.replace(/\s+(✔|✓)\s+/g, '\n- ');
+    
+    // Make "Step X:" a heading (H3)
+    formatted = formatted.replace(/([.!?])\s*(Step \d+:)/gi, '$1\n\n### $2');
+    // Also catch if it's right after an emoji
+    formatted = formatted.replace(/(✅|👉|📊|💡|⚽|🎯|🔥|💰|🏆|📌|📝|🤔|👇)\s*(Step \d+:)/gi, '$1\n\n### $2');
+    
+    // Make common section starters into headings
+    formatted = formatted.replace(/([.!?])\s*(What Are|How To|Why You|The Goal:)/gi, '$1\n\n### $2');
+    
+    // Replace single newlines with double newlines to ensure proper paragraphs (only if it's not already a list or heading)
+    formatted = formatted.replace(/([^\n])\n([^\n#-])/g, '$1\n\n$2');
+    
+    // Clean up multiple newlines
+    formatted = formatted.replace(/\n{3,}/g, '\n\n');
+    
+    // Remove emojis
+    formatted = formatted.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '');
+    
+    return formatted;
+  };
+
+  const displayContent = formatContent(post.content);
+
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       <SEO 
@@ -137,23 +178,6 @@ export default function BlogPost() {
                 </div>
               </div>
 
-              {/* Desktop Social Share */}
-              <div className="hidden md:flex items-center gap-2">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2">Share:</span>
-                {shareLinks.map((link) => (
-                  <a
-                    key={link.name}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => hapticFeedback('light')}
-                    className={`p-2 rounded-xl bg-slate-50 text-slate-500 transition-all ${link.color} hover:text-white`}
-                    title={`Share on ${link.name}`}
-                  >
-                    <link.icon className="w-5 h-5" />
-                  </a>
-                ))}
-              </div>
             </div>
           </div>
         </div>
@@ -167,81 +191,58 @@ export default function BlogPost() {
           className="bg-white rounded-3xl shadow-xl shadow-slate-200/50 overflow-hidden border border-slate-100"
         >
           {post.image_url && (
-            <img 
-              src={post.image_url} 
-              alt={post.title} 
-              className="w-full aspect-[2/1] object-cover"
-              referrerPolicy="no-referrer"
-            />
+            <div className="relative w-full">
+              <img 
+                src={post.image_url} 
+                alt={post.title} 
+                className="w-full aspect-[16/9] md:aspect-[21/9] object-cover"
+                referrerPolicy="no-referrer"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none" />
+            </div>
           )}
           
+          {/* Unified Social Share */}
+          <div className="flex items-center justify-center gap-3 p-6 border-b border-slate-100 bg-slate-50/50">
+            <span className="text-xs font-bold text-slate-400 uppercase tracking-widest mr-2 hidden sm:inline-block">Share Article:</span>
+            {shareLinks.map((link) => (
+              <a
+                key={link.name}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => hapticFeedback('light')}
+                className={`p-2.5 sm:px-4 sm:py-2.5 rounded-xl bg-white border border-slate-200 text-slate-500 transition-all ${link.color} hover:text-white hover:border-transparent flex items-center gap-2 shadow-sm`}
+                title={`Share on ${link.name}`}
+              >
+                <link.icon className="w-4 h-4 sm:w-5 sm:h-5" />
+                <span className="text-xs font-bold hidden sm:inline-block">{link.name}</span>
+              </a>
+            ))}
+          </div>
+          
           <div className="p-8 md:p-12">
-            <div className="markdown-body prose prose-slate prose-xl max-w-3xl mx-auto prose-headings:text-slate-900 prose-headings:font-black prose-p:text-slate-600 prose-p:leading-relaxed prose-strong:text-slate-900 prose-a:text-green-600 prose-h2:mt-12 prose-h2:mb-6 prose-h3:mt-8 prose-h3:mb-4">
+            <div className="markdown-body font-serif prose-headings:font-sans prose prose-slate prose-lg md:prose-xl max-w-3xl mx-auto prose-headings:text-slate-900 prose-headings:font-black prose-p:text-slate-700 prose-p:leading-relaxed prose-strong:text-slate-900 prose-a:text-green-600 prose-h2:mt-12 prose-h2:mb-6 prose-h3:mt-8 prose-h3:mb-4 [&>p:first-of-type]:first-letter:text-6xl [&>p:first-of-type]:first-letter:font-black [&>p:first-of-type]:first-letter:text-green-600 [&>p:first-of-type]:first-letter:float-left [&>p:first-of-type]:first-letter:mr-3 [&>p:first-of-type]:first-letter:leading-[0.8] [&>p:first-of-type]:first-letter:mt-2">
               <ReactMarkdown
+                remarkPlugins={[remarkBreaks, remarkGfm]}
                 components={{
-                  p: ({ children }) => {
-                    const childrenArray = React.Children.toArray(children);
-                    const firstChild = childrenArray[0];
-                    
-                    if (typeof firstChild === 'string' && /^[💡⚠️ℹ️]/.test(firstChild)) {
-                      return (
-                        <div className="bg-blue-50 border-l-4 border-blue-500 p-4 my-6 rounded-r-lg text-slate-800">
-                          {children}
-                        </div>
-                      );
-                    }
-                    return <p className="leading-relaxed mb-6">{children}</p>;
-                  }
+                  p: ({ children }) => <p className="leading-relaxed mb-6 whitespace-pre-wrap">{children}</p>,
+                  ul: ({ children }) => <ul className="list-disc pl-6 mb-8 space-y-3 marker:text-green-500">{children}</ul>,
+                  ol: ({ children }) => <ol className="list-decimal pl-6 mb-8 space-y-3 marker:text-green-500 font-medium">{children}</ol>,
+                  li: ({ children }) => <li className="text-slate-600 pl-2">{children}</li>,
+                  h1: ({ children }) => <h1 className="text-3xl md:text-4xl font-black text-slate-900 mt-14 mb-6 tracking-tight">{children}</h1>,
+                  h2: ({ children }) => <h2 className="text-2xl md:text-3xl font-bold text-slate-900 mt-12 mb-6 tracking-tight">{children}</h2>,
+                  h3: ({ children }) => <h3 className="text-xl md:text-2xl font-bold text-slate-900 mt-10 mb-4">{children}</h3>,
+                  strong: ({ children }) => <strong className="font-bold text-slate-900">{children}</strong>,
+                  a: ({ children, href }) => <a href={href} className="text-green-600 hover:text-green-700 font-medium underline underline-offset-4 decoration-green-200 hover:decoration-green-500 transition-colors">{children}</a>,
+                  blockquote: ({ children }) => <blockquote className="border-l-4 border-green-500 bg-green-50/50 py-4 px-6 rounded-r-2xl italic text-slate-700 my-8 shadow-sm">{children}</blockquote>
                 }}
               >
-                {post.content}
+                {displayContent}
               </ReactMarkdown>
-            </div>
-
-            {/* Mobile Social Share */}
-            <div className="mt-12 pt-8 border-t border-slate-100 md:hidden">
-              <p className="text-center text-sm font-bold text-slate-400 uppercase tracking-widest mb-6">Share this article</p>
-              <div className="flex justify-center gap-4">
-                {shareLinks.map((link) => (
-                  <a
-                    key={link.name}
-                    href={link.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    onClick={() => hapticFeedback('light')}
-                    className={`p-4 rounded-2xl bg-slate-50 text-slate-500 transition-all ${link.color} hover:text-white flex-1 flex flex-col items-center gap-2`}
-                  >
-                    <link.icon className="w-6 h-6" />
-                    <span className="text-[10px] font-bold uppercase">{link.name}</span>
-                  </a>
-                ))}
-              </div>
             </div>
           </div>
         </motion.div>
-
-        {/* Newsletter Bottom */}
-        <div className="mt-12 bg-green-600 rounded-3xl p-8 md:p-12 text-white relative overflow-hidden">
-          <div className="relative z-10 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="max-w-md text-center md:text-left">
-              <h2 className="text-2xl md:text-3xl font-black mb-4">Never miss an insight</h2>
-              <p className="text-green-100">Join 5,000+ football fans who get our weekly data-driven betting analysis.</p>
-            </div>
-            <div className="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
-              <input 
-                type="email" 
-                placeholder="Enter your email" 
-                className="px-6 py-4 bg-white/10 border border-white/20 rounded-2xl focus:outline-none focus:bg-white/20 transition-all placeholder:text-green-200 text-white w-full sm:w-64"
-              />
-              <button className="px-8 py-4 bg-white text-green-600 font-black rounded-2xl hover:bg-green-50 transition-all active:scale-95">
-                Subscribe
-              </button>
-            </div>
-          </div>
-          <div className="absolute top-0 right-0 p-8 opacity-10">
-            <Share2 className="w-48 h-48" />
-          </div>
-        </div>
       </div>
     </div>
   );

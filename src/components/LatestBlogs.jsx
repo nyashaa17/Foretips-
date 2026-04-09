@@ -91,7 +91,7 @@ export default function LatestBlogs() {
                     {new Date(post.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}
                   </div>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-green-600 transition-colors line-clamp-2">
+                <h3 className="text-lg font-bold text-slate-900 mb-2 group-hover:text-green-600 transition-colors">
                   {post.title}
                 </h3>
                 <p className="text-sm text-slate-500 mb-4 leading-relaxed line-clamp-2 flex-grow">

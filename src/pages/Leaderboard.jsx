@@ -51,18 +51,6 @@ export default function Leaderboard() {
               return b.successRate - a.successRate;
             });
 
-          // Pad to at least 3 users
-          while (sorted.length < 3) {
-            sorted.push({
-              id: `placeholder-${sorted.length}`,
-              username: 'Available Spot',
-              score: 0,
-              totalTips: 0,
-              successRate: 0,
-              isPlaceholder: true
-            });
-          }
-
           setLeaderboard(sorted);
         }
       } catch (err) {
