@@ -36,7 +36,8 @@ export default function BlogPost() {
           .from('blogs')
           .select('*')
           .eq('slug', slug)
-          .single();
+          .limit(1)
+          .maybeSingle();
 
         if (error) throw error;
         setPost(data);
