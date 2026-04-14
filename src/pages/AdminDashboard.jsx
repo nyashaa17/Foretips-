@@ -20,9 +20,16 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.email === 'admin@foretips.co.zw') {
-        setIsAdmin(true);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.warn('Error getting user:', error.message);
+        }
+        if (user && user.email === 'admin@foretips.co.zw') {
+          setIsAdmin(true);
+        }
+      } catch (err) {
+        console.warn('Exception getting user:', err);
       }
     };
     checkAdmin();

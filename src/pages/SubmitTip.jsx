@@ -61,8 +61,16 @@ export default function SubmitTip() {
 
   useEffect(() => {
     const checkUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.warn('Error getting user:', error.message);
+        }
+        if (!user) {
+          navigate('/signup', { state: { message: 'Please sign up to submit a tip.' } });
+        }
+      } catch (err) {
+        console.warn('Exception getting user:', err);
         navigate('/signup', { state: { message: 'Please sign up to submit a tip.' } });
       }
     };
@@ -200,7 +208,15 @@ export default function SubmitTip() {
         return;
       }
 
-      const { data: { user } } = await supabase.auth.getUser();
+      let user;
+      try {
+        const { data, error } = await supabase.auth.getUser();
+        if (error) throw error;
+        user = data.user;
+      } catch (err) {
+        console.warn('Error getting user:', err.message);
+      }
+      
       if (!user) {
         navigate('/signup', { state: { message: 'Please sign up to submit a tip.' } });
         return;

@@ -89,20 +89,24 @@ export default function Dashboard() {
     }
 
     const fetchDashboardData = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        navigate('/signin');
-        return;
-      }
-      
-      setUser(session.user);
+      try {
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) {
+          console.warn('Session error:', sessionError.message);
+        }
+        if (!session) {
+          navigate('/signin');
+          return;
+        }
+        
+        setUser(session.user);
 
-      // Fetch user profile
-      let { data: profileData } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .maybeSingle();
+        // Fetch user profile
+        let { data: profileData } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
         
       if (!profileData) {
         const email = session.user.email || '';
@@ -164,8 +168,14 @@ export default function Dashboard() {
           rank
         });
       }
-
-      setLoading(false);
+      } catch (err) {
+        console.error('Error fetching dashboard data:', err);
+        if (err.message?.includes('Refresh Token') || err.message?.includes('session')) {
+          navigate('/signin');
+        }
+      } finally {
+        setLoading(false);
+      }
     };
     
     fetchDashboardData();

@@ -15,31 +15,39 @@ export default function UserProfile() {
 
   const fetchUserData = async () => {
     setLoading(true);
-    const { data: { user } } = await supabase.auth.getUser();
-    if (user) {
-      setUser(user);
-      const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
-      
-      if (profileData) {
-        setProfile({ username: profileData.username, email: user.email });
-      } else {
-        const email = user.email || '';
-        const username = user.user_metadata?.user_name || user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0] || 'user';
-        
-        const { data: newProfile } = await supabase.from('profiles').upsert([{ 
-          id: user.id, 
-          username: username
-        }]).select().maybeSingle();
-        
-        if (newProfile) {
-          setProfile({ username: newProfile.username, email: user.email });
-        }
+    try {
+      const { data: { user }, error } = await supabase.auth.getUser();
+      if (error) {
+        console.warn('Error getting user:', error.message);
       }
-      
-      const { data: tipsData } = await supabase.from('community_tips').select('*').eq('user_id', user.id);
-      if (tipsData) setTips(tipsData);
+      if (user) {
+        setUser(user);
+        const { data: profileData } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle();
+        
+        if (profileData) {
+          setProfile({ username: profileData.username, email: user.email });
+        } else {
+          const email = user.email || '';
+          const username = user.user_metadata?.user_name || user.user_metadata?.full_name || user.user_metadata?.name || email.split('@')[0] || 'user';
+          
+          const { data: newProfile } = await supabase.from('profiles').upsert([{ 
+            id: user.id, 
+            username: username
+          }]).select().maybeSingle();
+          
+          if (newProfile) {
+            setProfile({ username: newProfile.username, email: user.email });
+          }
+        }
+        
+        const { data: tipsData } = await supabase.from('community_tips').select('*').eq('user_id', user.id);
+        if (tipsData) setTips(tipsData);
+      }
+    } catch (err) {
+      console.warn('Exception getting user:', err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   const updateProfile = async () => {

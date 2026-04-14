@@ -6,7 +6,7 @@ import PredictionCard from '../components/PredictionCard';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import CommunityTipsPreview from '../components/CommunityTipsPreview';
 import LeaderboardPreview from '../components/LeaderboardPreview';
-import LatestBlogs from '../components/LatestBlogs';
+import FAQSection from '../components/FAQSection';
 import { TrendingUp, Activity, ChevronRight, Star, Calendar, Trophy, MessageCircle, Zap, Users, Medal } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { hapticFeedback } from '../utils/haptics';
@@ -167,18 +167,17 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex justify-center"
+            className="flex flex-wrap justify-center gap-3"
           >
-            <a 
-              href="https://whatsapp.com/channel/0029Vb7MXnXKLaHohHn7do3q" 
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => hapticFeedback('medium')}
-              className="px-8 py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl transition-all shadow-lg shadow-green-500/25 flex items-center gap-3 scale-100 hover:scale-105 active:scale-95"
-            >
-              <img src="https://upload.wikimedia.org/wikipedia/commons/6/6b/WhatsApp.svg" alt="WhatsApp" className="w-6 h-6" />
-              Join WhatsApp Channel
-            </a>
+            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2">
+              🚀 Instant updates
+            </span>
+            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2">
+              🧠 AI powered
+            </span>
+            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2">
+              📱 Low data usage
+            </span>
           </motion.div>
         </div>
       </motion.div>
@@ -268,7 +267,10 @@ export default function Home() {
 
       <CommunityTipsPreview />
       <LeaderboardPreview />
-      <LatestBlogs />
+      
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <FAQSection />
+      </section>
     </div>
   );
 }

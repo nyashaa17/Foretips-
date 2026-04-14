@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getPredictions, getLeagues, getMemoryCache, getPredictionsCacheKey } from '../services/api';
+import { getPredictions } from '../services/bsdApi';
+import { getLeagues, getMemoryCache, getPredictionsCacheKey } from '../services/api';
 import PredictionCard from '../components/PredictionCard';
 import { AdPlacement } from '../components/AdPlacement';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
@@ -95,8 +96,8 @@ export default function Predictions() {
       }
       setError(null);
       
-      const preds = await getPredictions(params, forceRefresh);
-      setPredictions(preds || []);
+      const response = await getPredictions(params);
+      setPredictions(response?.results || []);
     } catch (err) {
       setError('Failed to load predictions.');
       console.error(err);

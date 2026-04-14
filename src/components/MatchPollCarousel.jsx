@@ -110,7 +110,14 @@ export default function MatchPollCarousel() {
   const [user, setUser] = useState(null);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => setUser(user));
+    supabase.auth.getUser().then(({ data: { user }, error }) => {
+      if (error) {
+        console.warn('Error getting user:', error.message);
+      }
+      setUser(user);
+    }).catch(err => {
+      console.warn('Exception getting user:', err);
+    });
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
     });

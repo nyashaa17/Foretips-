@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { saveToHistory, getTeamLogoUrl, getLeagueLogoUrl } from '../services/api';
+import { saveToHistory } from '../services/api';
+import { isValueBet, getImageUrl } from '../services/bsdApi';
 import { hapticFeedback } from '../utils/haptics';
 import { getPreviewUrl } from '../utils/image';
 import clsx from 'clsx';
@@ -55,16 +56,17 @@ export default function PredictionCard({ prediction }) {
     
   const event_date = event.event_date || event.start_time;
 
-  // Real-time odds from API (event object) or calculated from probabilities
-  const displayOdds = {
-    home: event.odds_home || (prob_home_win ? (100 / prob_home_win).toFixed(2) : null),
-    draw: event.odds_draw || (prob_draw ? (100 / prob_draw).toFixed(2) : null),
-    away: event.odds_away || (prob_away_win ? (100 / prob_away_win).toFixed(2) : null)
-  };
-
   const hasActualScore = event.home_score !== undefined && event.away_score !== undefined && event.home_score !== null && event.away_score !== null;
   const isMatchFinished = ['finished', 'Finished', 'FT', 'AET', 'PEN'].includes(event.status);
   const isMatchLive = ['inprogress', '1st_half', 'halftime', '2nd_half', 'LIVE', 'HT'].includes(event.status);
+
+  // Real-time odds from API (event object) or calculated from probabilities
+  // If match is finished, prefer the pre-match odds stored in the prediction object if available
+  const displayOdds = {
+    home: (isMatchFinished && prediction.odds_home) ? prediction.odds_home : (event.odds_home || (prob_home_win ? (100 / prob_home_win).toFixed(2) : null)),
+    draw: (isMatchFinished && prediction.odds_draw) ? prediction.odds_draw : (event.odds_draw || (prob_draw ? (100 / prob_draw).toFixed(2) : null)),
+    away: (isMatchFinished && prediction.odds_away) ? prediction.odds_away : (event.odds_away || (prob_away_win ? (100 / prob_away_win).toFixed(2) : null))
+  };
 
   let actualResult = null;
   let predictionCorrect = null;
@@ -78,9 +80,9 @@ export default function PredictionCard({ prediction }) {
     }
   }
 
-  const leagueLogos = [getLeagueLogoUrl(league?.api_id)];
-  const homeLogos = [getTeamLogoUrl(home_team?.api_id)];
-  const awayLogos = [getTeamLogoUrl(away_team?.api_id)];
+  const leagueLogos = [getImageUrl('league', league?.api_id)];
+  const homeLogos = [getImageUrl('team', home_team?.api_id)];
+  const awayLogos = [getImageUrl('team', away_team?.api_id)];
 
   const getConfidenceColor = (conf) => {
     if (!conf) return 'bg-slate-100 text-slate-400 border-slate-200';
@@ -312,6 +314,11 @@ export default function PredictionCard({ prediction }) {
           <div className="flex flex-col">
             <div className="flex items-center gap-2">
               <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Pick</span>
+              {(confidence >= 75 || (predicted_result === 'H' && isValueBet(prob_home_win, displayOdds.home)) || (predicted_result === 'A' && isValueBet(prob_away_win, displayOdds.away))) && (
+                <span className="bg-green-100 text-green-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider flex items-center gap-1">
+                  TIP
+                </span>
+              )}
               {isMatchFinished && predictionCorrect === true && (
                 <span className="bg-green-100 text-green-700 text-[8px] px-1.5 py-0.5 rounded font-black uppercase tracking-wider">Won</span>
               )}
@@ -343,9 +350,21 @@ export default function PredictionCard({ prediction }) {
         {/* Goal Market Section */}
         <div className="grid grid-cols-3 gap-2 mt-3">
           <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 flex flex-col items-center justify-center">
+            <span className="text-[8px] text-slate-400 uppercase font-bold mb-1">Over 1.5</span>
+            <span className="text-xs font-black text-slate-900">
+              {prediction.prob_over_15 ? `${Math.round(prediction.prob_over_15)}%` : '---'}
+            </span>
+          </div>
+          <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 flex flex-col items-center justify-center">
             <span className="text-[8px] text-slate-400 uppercase font-bold mb-1">Over 2.5</span>
             <span className="text-xs font-black text-slate-900">
               {prob_over_25 ? `${Math.round(prob_over_25)}%` : '---'}
+            </span>
+          </div>
+          <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 flex flex-col items-center justify-center">
+            <span className="text-[8px] text-slate-400 uppercase font-bold mb-1">Over 3.5</span>
+            <span className="text-xs font-black text-slate-900">
+              {prediction.prob_over_35 ? `${Math.round(prediction.prob_over_35)}%` : '---'}
             </span>
           </div>
           <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 flex flex-col items-center justify-center">
@@ -358,6 +377,12 @@ export default function PredictionCard({ prediction }) {
             <span className="text-[8px] text-slate-400 uppercase font-bold mb-1">Score</span>
             <span className="text-xs font-black text-green-600">
               {most_likely_score || 'N/A'}
+            </span>
+          </div>
+          <div className="bg-slate-50 border border-slate-100 rounded-lg p-2 flex flex-col items-center justify-center">
+            <span className="text-[8px] text-slate-400 uppercase font-bold mb-1" title="Expected Goals (xG) - A measure of the quality of goalscoring chances">xG</span>
+            <span className="text-[10px] font-black text-slate-900 whitespace-nowrap">
+              {prediction.expected_home_goals != null ? `${Number(prediction.expected_home_goals).toFixed(1)} - ${Number(prediction.expected_away_goals).toFixed(1)}` : '---'}
             </span>
           </div>
         </div>

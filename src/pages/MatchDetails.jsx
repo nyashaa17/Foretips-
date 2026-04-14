@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { getMatchDetails, getPredictionByEventId, getEventDetails, getLiveMatchDetails, getPlayerStats, saveToHistory, getTeamLogoUrl, getLeagueLogoUrl } from '../services/api';
+import { getEventDetails, getPredictionDetails, getPredictionByEventId, getPlayerStats, getPredictedLineup, getOddsCompare, getImageUrl } from '../services/bsdApi';
+import { saveToHistory } from '../services/api';
 import { format } from 'date-fns';
 import { ChevronLeft, TrendingUp, Activity, Target, Shield, Sparkles, Trophy, Clock, Info, Flag, Users } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -13,6 +14,12 @@ import NotFound from './NotFound';
 
 import SmartLogo from '../components/SmartLogo';
 import MatchSpatialData from '../components/MatchSpatialData';
+import OddsComparison from '../components/OddsComparison';
+import PlayerStatsTable from '../components/PlayerStatsTable';
+import PredictedLineup from '../components/PredictedLineup';
+import TeamForm from '../components/TeamForm';
+import HeadToHead from '../components/HeadToHead';
+import MatchLineups from '../components/MatchLineups';
 
 const StatBar = ({ label, home, away, type = 'percentage' }) => {
   const homeVal = parseFloat(home) || 0;
@@ -50,6 +57,8 @@ export default function MatchDetails() {
   const [match, setMatch] = useState(initialPrediction);
   const [eventDetails, setEventDetails] = useState(null);
   const [playerStats, setPlayerStats] = useState([]);
+  const [predictedLineup, setPredictedLineup] = useState(null);
+  const [oddsCompare, setOddsCompare] = useState(null);
   const [loading, setLoading] = useState(!initialPrediction);
   const [error, setError] = useState(null);
   const [aiAnalysis, setAiAnalysis] = useState('');
@@ -62,77 +71,64 @@ export default function MatchDetails() {
         
         const isEventRoute = location.pathname.startsWith('/event/');
         let data = null;
+        let eventId = null;
         
         if (isEventRoute) {
           data = await getPredictionByEventId(id);
-          if (!data) {
-            // Try event details first to get the status
-            let eventData = await getEventDetails(id);
-            
-            // If it's live, fetch the live details to get incidents and live_stats
-            if (eventData) {
-              const status = eventData.status?.toLowerCase();
-              const isLive = ['inprogress', '1st_half', 'halftime', '2nd_half'].includes(status);
-              
-              if (isLive) {
-                const liveData = await getLiveMatchDetails(id);
-                if (liveData) {
-                  eventData = liveData;
-                }
-              }
-              data = { event: eventData, event_id: id };
-            }
-          }
+          eventId = id;
         } else {
-          data = await getMatchDetails(id);
+          // It's a prediction ID, but we need to fetch it to get the event ID
+          data = await getPredictionDetails(id);
+          eventId = data?.event?.id || data?.event?.api_id;
         }
 
-        // Fallback to initialPrediction if API returns null (e.g. 404 for live matches)
+        // Fallback to initialPrediction if API returns null
         if (!data && initialPrediction) {
           data = initialPrediction;
+          eventId = data.event?.id || data.event?.api_id;
         }
 
-        if (!data) {
+        if (!data && !eventId) {
           setError('Match details not found.');
           setMatch(null);
         } else {
-          setMatch(data);
-          if (!isEventRoute || data.id) {
-            saveToHistory(data);
-          }
-          if (data.id) {
-            generateAiAnalysis(data);
+          if (data) {
+            setMatch(data);
+            if (!isEventRoute || data.id) {
+              saveToHistory(data);
+            }
+            if (data.id) {
+              generateAiAnalysis(data);
+            }
           }
           
-          // Fetch comprehensive event details
-          const eventId = data.event?.id || data.event_id;
           if (eventId) {
             try {
-              let eventData = data.event;
-              const status = eventData?.status?.toLowerCase();
-              const isLive = ['inprogress', '1st_half', 'halftime', '2nd_half'].includes(status);
-              
-              if (isLive) {
-                const liveData = await getLiveMatchDetails(eventId);
-                if (liveData) {
-                  eventData = liveData;
-                }
-              } else if (!eventData || !eventData.league) {
-                // Only fetch event details if we don't already have them fully populated
-                const fullEventData = await getEventDetails(eventId);
-                if (fullEventData) {
-                  eventData = fullEventData;
+              // Fetch comprehensive event details
+              const fullEventData = await getEventDetails(eventId);
+              if (fullEventData) {
+                setEventDetails(fullEventData);
+                
+                // If not started, fetch predicted lineup
+                if (fullEventData.status === 'notstarted' || fullEventData.status === 'NS') {
+                  const lineupData = await getPredictedLineup(fullEventData.api_id).catch(() => null);
+                  setPredictedLineup(lineupData);
                 }
               }
               
-              const pStatsData = await getPlayerStats(eventId);
-              
-              setEventDetails(eventData);
+              const pStatsData = await getPlayerStats(eventId).catch(() => null);
               if (pStatsData?.results) {
                 setPlayerStats(pStatsData.results);
               }
+              
+              const oddsData = await getOddsCompare(eventId).catch(() => null);
+              if (oddsData?.results) {
+                setOddsCompare(oddsData.results);
+              } else if (Array.isArray(oddsData)) {
+                setOddsCompare(oddsData);
+              }
             } catch (e) {
-              console.warn('Failed to fetch event details or player stats:', e);
+              console.warn('Failed to fetch comprehensive event details:', e);
             }
           }
         }
@@ -266,9 +262,9 @@ export default function MatchDetails() {
   const seoTitle = `${home_team?.name} vs ${away_team?.name} Prediction & Analysis`;
   const seoDescription = `Expert prediction and statistical analysis for ${home_team?.name} vs ${away_team?.name} in the ${league?.name}. Get win probabilities, predicted score, and AI-driven insights.`;
 
-  const homeLogos = [getTeamLogoUrl(home_team?.api_id)];
-  const awayLogos = [getTeamLogoUrl(away_team?.api_id)];
-  const leagueLogos = [getLeagueLogoUrl(league?.api_id)];
+  const homeLogos = [getImageUrl('team', home_team?.api_id)];
+  const awayLogos = [getImageUrl('team', away_team?.api_id)];
+  const leagueLogos = [getImageUrl('league', league?.api_id)];
 
   const getConfidenceColor = (conf) => {
     if (!conf) return 'bg-slate-100 text-slate-400 border-slate-200';
@@ -351,14 +347,48 @@ export default function MatchDetails() {
             <h2 className="text-xl md:text-2xl font-bold text-slate-900 text-center">{away_team?.name}</h2>
           </div>
         </div>
+
+        {/* Coaches and Referee */}
+        {(eventDetails?.home_coach || eventDetails?.away_coach || eventDetails?.referee) && (
+          <div className="bg-slate-50 p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-slate-600">
+            <div className="flex-1 text-center sm:text-left">
+              {eventDetails?.home_coach && (
+                <span className="font-medium"><span className="text-slate-400">Coach:</span> {eventDetails.home_coach.name || eventDetails.home_coach}</span>
+              )}
+            </div>
+            
+            <div className="flex-1 text-center flex items-center justify-center gap-2">
+              {eventDetails?.referee && (
+                <>
+                  <span className="font-medium"><span className="text-slate-400">Ref:</span> {eventDetails.referee.name || eventDetails.referee}</span>
+                  {(eventDetails.referee.yellow_cards !== undefined || eventDetails.referee.red_cards !== undefined) && (
+                    <div className="flex items-center gap-1 ml-2">
+                      {eventDetails.referee.yellow_cards > 0 && (
+                        <span className="flex items-center gap-0.5 text-xs font-bold text-slate-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-sm">
+                          <span className="w-2 h-3 bg-yellow-400 rounded-sm"></span> {eventDetails.referee.yellow_cards}
+                        </span>
+                      )}
+                      {eventDetails.referee.red_cards > 0 && (
+                        <span className="flex items-center gap-0.5 text-xs font-bold text-slate-700 bg-white px-1.5 py-0.5 rounded border border-slate-200 shadow-sm">
+                          <span className="w-2 h-3 bg-red-500 rounded-sm"></span> {eventDetails.referee.red_cards}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            <div className="flex-1 text-center sm:text-right">
+              {eventDetails?.away_coach && (
+                <span className="font-medium"><span className="text-slate-400">Coach:</span> {eventDetails.away_coach.name || eventDetails.away_coach}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <AdPlacement position="in-article" />
-
-      {/* Spatial Data */}
-      {eventDetails && (
-        <MatchSpatialData event={eventDetails} />
-      )}
 
       {prediction && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -445,8 +475,21 @@ export default function MatchDetails() {
                 </div>
               )}
 
-              {(event.odds_over_25 || event.odds_btts_yes) ? (
+              {(event.odds_over_25 || event.odds_btts_yes || event.odds_over_15 || event.odds_over_35) ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block text-center">Over/Under 1.5 Odds</span>
+                    <div className="flex justify-between">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-slate-400">Over</span>
+                        <span className="text-lg font-bold text-slate-900">{event.odds_over_15 || '---'}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-slate-400">Under</span>
+                        <span className="text-lg font-bold text-slate-900">{event.odds_under_15 || '---'}</span>
+                      </div>
+                    </div>
+                  </div>
                   <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
                     <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block text-center">Over/Under 2.5 Odds</span>
                     <div className="flex justify-between">
@@ -457,6 +500,19 @@ export default function MatchDetails() {
                       <div className="flex flex-col items-center">
                         <span className="text-[10px] text-slate-400">Under</span>
                         <span className="text-lg font-bold text-slate-900">{event.odds_under_25 || '---'}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                    <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2 block text-center">Over/Under 3.5 Odds</span>
+                    <div className="flex justify-between">
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-slate-400">Over</span>
+                        <span className="text-lg font-bold text-slate-900">{event.odds_over_35 || '---'}</span>
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span className="text-[10px] text-slate-400">Under</span>
+                        <span className="text-lg font-bold text-slate-900">{event.odds_under_35 || '---'}</span>
                       </div>
                     </div>
                   </div>
@@ -481,103 +537,6 @@ export default function MatchDetails() {
                 </div>
               )}
             </div>
-
-            {/* Player Stats */}
-            {playerStats && playerStats.length > 0 && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mt-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-slate-900 p-2 rounded-lg">
-                    <Users className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">Player Stats</h3>
-                </div>
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left text-slate-500">
-                    <thead className="text-xs text-slate-700 uppercase bg-slate-50">
-                      <tr>
-                        <th className="px-4 py-3 rounded-tl-lg">Player</th>
-                        <th className="px-4 py-3">Mins</th>
-                        <th className="px-4 py-3">Goals</th>
-                        <th className="px-4 py-3">Assists</th>
-                        <th className="px-4 py-3">Shots (OT)</th>
-                        <th className="px-4 py-3">Passes</th>
-                        <th className="px-4 py-3">Tackles</th>
-                        <th className="px-4 py-3 rounded-tr-lg">Rating</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {playerStats.map((stat, idx) => (
-                        <tr key={idx} className="border-b border-slate-100 last:border-0 hover:bg-slate-50 transition-colors">
-                          <td className="px-4 py-3 font-medium text-slate-900">
-                            {stat.player?.id ? (
-                              <Link to={`/player/${stat.player.id}`} className="hover:text-blue-600 hover:underline">
-                                {stat.player?.name || `Player ${idx + 1}`}
-                              </Link>
-                            ) : (
-                              stat.player?.name || `Player ${idx + 1}`
-                            )}
-                          </td>
-                          <td className="px-4 py-3">{stat.minutes_played || 0}'</td>
-                          <td className="px-4 py-3 font-medium text-green-600">{stat.goals || 0}</td>
-                          <td className="px-4 py-3 text-blue-600">{stat.goal_assist || 0}</td>
-                          <td className="px-4 py-3">{stat.total_shots || 0} ({stat.shots_on_target || 0})</td>
-                          <td className="px-4 py-3">{stat.accurate_pass || 0}/{stat.total_pass || 0}</td>
-                          <td className="px-4 py-3">{stat.won_tackle || 0}/{stat.total_tackle || 0}</td>
-                          <td className="px-4 py-3">
-                            <span className={clsx(
-                              "px-2 py-1 rounded text-xs font-bold",
-                              stat.rating >= 8 ? "bg-green-100 text-green-700" :
-                              stat.rating >= 7 ? "bg-blue-100 text-blue-700" :
-                              stat.rating >= 6 ? "bg-yellow-100 text-yellow-700" :
-                              "bg-slate-100 text-slate-700"
-                            )}>
-                              {stat.rating ? parseFloat(stat.rating).toFixed(1) : 'N/A'}
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
-
-            {/* Shotmap */}
-            {eventDetails?.shotmap && eventDetails.shotmap.length > 0 && (
-              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mt-8">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="bg-slate-900 p-2 rounded-lg">
-                    <Target className="w-5 h-5 text-white" />
-                  </div>
-                  <h3 className="text-xl font-bold text-slate-900">Shotmap</h3>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {eventDetails.shotmap.map((shot, idx) => (
-                    <div key={idx} className="flex items-center justify-between p-3 bg-slate-50 rounded-xl border border-slate-100">
-                      <div>
-                        {shot.player?.id || shot.pid ? (
-                          <Link to={`/player/${shot.player?.id || shot.pid}`} className="font-bold text-slate-800 hover:text-blue-600 hover:underline block">
-                            {shot.player?.name || `Player ${shot.pid || 'Unknown'}`}
-                          </Link>
-                        ) : (
-                          <p className="font-bold text-slate-800">{shot.player?.name || `Player ${shot.pid || 'Unknown'}`}</p>
-                        )}
-                        <p className="text-xs text-slate-500">{shot.sit || shot.situation || 'Open Play'} • {shot.body || shot.body_part || 'Foot'}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-bold text-slate-800">{shot.xg ? shot.xg.toFixed(2) : '-'} xG</p>
-                        <p className={clsx(
-                          "text-xs font-bold",
-                          (shot.type === 'goal' || shot.is_goal) ? "text-green-600" : "text-slate-500"
-                        )}>
-                          {(shot.type === 'goal' || shot.is_goal) ? 'Goal' : (shot.type || 'Miss')}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
 
             {/* AI Analysis */}
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm relative overflow-hidden">
@@ -660,12 +619,20 @@ export default function MatchDetails() {
               </div>
               <div className="space-y-4">
                 <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="text-slate-600">Over 1.5 Goals</span>
+                  <span className="font-bold text-slate-900">{Math.round(prediction.prob_over_15 || 0)}%</span>
+                </div>
+                <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <span className="text-slate-600">Over 2.5 Goals</span>
-                  <span className="font-bold text-slate-900">{Math.round(prediction.prob_over_25)}%</span>
+                  <span className="font-bold text-slate-900">{Math.round(prediction.prob_over_25 || 0)}%</span>
+                </div>
+                <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  <span className="text-slate-600">Over 3.5 Goals</span>
+                  <span className="font-bold text-slate-900">{Math.round(prediction.prob_over_35 || 0)}%</span>
                 </div>
                 <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <span className="text-slate-600">Both Teams to Score</span>
-                  <span className="font-bold text-slate-900">{Math.round(prediction.prob_btts_yes)}%</span>
+                  <span className="font-bold text-slate-900">{Math.round(prediction.prob_btts_yes || 0)}%</span>
                 </div>
                 <div className="flex justify-between items-center bg-slate-50 p-3 rounded-xl border border-slate-200">
                   <span className="text-slate-600">Most Likely Score</span>
@@ -683,12 +650,16 @@ export default function MatchDetails() {
               </div>
               <div className="flex justify-between items-end">
                 <div className="flex flex-col items-center gap-2">
-                  <span className="text-3xl font-black text-slate-900">{prediction.expected_home_goals != null ? Number(prediction.expected_home_goals).toFixed(2) : '---'}</span>
+                  <span className="text-3xl font-black text-slate-900">
+                    {eventDetails?.home_xg_live != null ? Number(eventDetails.home_xg_live).toFixed(2) : (prediction.expected_home_goals != null ? Number(prediction.expected_home_goals).toFixed(2) : '---')}
+                  </span>
                   <span className="text-xs text-slate-500 uppercase tracking-wider">Home xG</span>
                 </div>
                 <div className="h-12 w-px bg-slate-200 mb-2"></div>
                 <div className="flex flex-col items-center gap-2">
-                  <span className="text-3xl font-black text-slate-900">{prediction.expected_away_goals != null ? Number(prediction.expected_away_goals).toFixed(2) : '---'}</span>
+                  <span className="text-3xl font-black text-slate-900">
+                    {eventDetails?.away_xg_live != null ? Number(eventDetails.away_xg_live).toFixed(2) : (prediction.expected_away_goals != null ? Number(prediction.expected_away_goals).toFixed(2) : '---')}
+                  </span>
                   <span className="text-xs text-slate-500 uppercase tracking-wider">Away xG</span>
                 </div>
               </div>
@@ -696,6 +667,40 @@ export default function MatchDetails() {
           </div>
         </div>
       )}
+
+      {/* New Sections */}
+      <div className="mt-8 space-y-8">
+        {eventDetails?.home_form || eventDetails?.away_form ? (
+          <TeamForm 
+            homeTeam={home_team?.name} 
+            awayTeam={away_team?.name} 
+            homeForm={eventDetails.home_form} 
+            awayForm={eventDetails.away_form} 
+          />
+        ) : null}
+
+        {eventDetails?.head_to_head ? (
+          <HeadToHead 
+            h2h={eventDetails.head_to_head} 
+            homeTeam={home_team?.name} 
+            awayTeam={away_team?.name} 
+          />
+        ) : null}
+
+        {eventDetails?.lineups ? (
+          <MatchLineups 
+            lineups={eventDetails.lineups} 
+            homeTeam={home_team?.name} 
+            awayTeam={away_team?.name} 
+          />
+        ) : (
+          <PredictedLineup lineup={predictedLineup} />
+        )}
+
+        <MatchSpatialData event={eventDetails} />
+        <PlayerStatsTable stats={playerStats} />
+        <OddsComparison odds={oddsCompare} />
+      </div>
 
     </div>
   );

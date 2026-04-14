@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { getLiveMatches } from '../services/api';
+import { getLiveMatches } from '../services/bsdApi';
 import LiveMatchCard from '../components/LiveMatchCard';
 import { MatchSkeleton } from '../components/LoadingSkeleton';
 import { Activity, RefreshCw } from 'lucide-react';

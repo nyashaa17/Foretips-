@@ -21,10 +21,15 @@ export default function Navbar() {
 
   useEffect(() => {
     // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data: { session }, error }) => {
+      if (error) {
+        console.warn('Error getting session:', error.message);
+      }
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       setIsAdmin(currentUser?.email === 'admin@foretips.co.zw');
+    }).catch(err => {
+      console.warn('Exception getting session:', err);
     });
 
     // Listen for auth changes

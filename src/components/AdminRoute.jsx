@@ -8,11 +8,19 @@ export default function AdminRoute({ children }) {
 
   useEffect(() => {
     const checkAdmin = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user && user.email === 'admin@foretips.co.zw') {
-        setIsAdmin(true);
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        if (error) {
+          console.warn('Error getting user:', error.message);
+        }
+        if (user && user.email === 'admin@foretips.co.zw') {
+          setIsAdmin(true);
+        }
+      } catch (err) {
+        console.warn('Exception getting user:', err);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     checkAdmin();
   }, []);
