@@ -33,9 +33,9 @@ export default function LiveMatchCard({ match }) {
     ? { name: rawAway, id: rawAway } 
     : (rawAway ? { ...rawAway, id: rawAway.id || rawAway.team_id, api_id: rawAway.api_id } : { name: 'Away Team' });
 
-  const leagueLogos = [getImageUrl('league', league?.api_id)];
-  const homeLogos = [getImageUrl('team', home_team?.api_id)];
-  const awayLogos = [getImageUrl('team', away_team?.api_id)];
+  const leagueLogos = [getImageUrl('league', league?.id)];
+  const homeLogos = [getImageUrl('team', home_team?.id)];
+  const awayLogos = [getImageUrl('team', away_team?.id)];
 
   const sortedIncidents = incidents ? [...incidents].sort((a, b) => a.minute - b.minute) : [];
 

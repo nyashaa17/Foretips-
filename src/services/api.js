@@ -542,14 +542,14 @@ export const getSquad = async (teamId, isNational = false) => {
   return result;
 };
 
-export const getTeamLogoUrl = (apiId) => {
-  if (!apiId) return null;
-  return `/img/team/${apiId}`;
+export const getTeamLogoUrl = (id) => {
+  if (!id) return null;
+  return `/img/team/${id}/`;
 };
 
-export const getLeagueLogoUrl = (apiId) => {
-  if (!apiId) return null;
-  return `/img/league/${apiId}`;
+export const getLeagueLogoUrl = (id) => {
+  if (!id) return null;
+  return `/img/league/${id}/`;
 };
 
 // History Management

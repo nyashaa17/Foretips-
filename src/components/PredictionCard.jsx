@@ -80,9 +80,9 @@ export default function PredictionCard({ prediction }) {
     }
   }
 
-  const leagueLogos = [getImageUrl('league', league?.api_id)];
-  const homeLogos = [getImageUrl('team', home_team?.api_id)];
-  const awayLogos = [getImageUrl('team', away_team?.api_id)];
+  const leagueLogos = [getImageUrl('league', league?.id)];
+  const homeLogos = [getImageUrl('team', home_team?.id)];
+  const awayLogos = [getImageUrl('team', away_team?.id)];
 
   const getConfidenceColor = (conf) => {
     if (!conf) return 'bg-slate-100 text-slate-400 border-slate-200';

@@ -262,9 +262,9 @@ export default function MatchDetails() {
   const seoTitle = `${home_team?.name} vs ${away_team?.name} Prediction & Analysis`;
   const seoDescription = `Expert prediction and statistical analysis for ${home_team?.name} vs ${away_team?.name} in the ${league?.name}. Get win probabilities, predicted score, and AI-driven insights.`;
 
-  const homeLogos = [getImageUrl('team', home_team?.api_id)];
-  const awayLogos = [getImageUrl('team', away_team?.api_id)];
-  const leagueLogos = [getImageUrl('league', league?.api_id)];
+  const homeLogos = [getImageUrl('team', home_team?.id)];
+  const awayLogos = [getImageUrl('team', away_team?.id)];
+  const leagueLogos = [getImageUrl('league', league?.id)];
 
   const getConfidenceColor = (conf) => {
     if (!conf) return 'bg-slate-100 text-slate-400 border-slate-200';

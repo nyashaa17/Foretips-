@@ -243,8 +243,8 @@ export default function MatchPollCarousel() {
     ? { name: rawAway, id: rawAway } 
     : (rawAway ? { ...rawAway, id: rawAway.id || rawAway.team_id, api_id: rawAway.api_id } : { name: 'Away Team' });
 
-  const homeLogos = [getTeamLogoUrl(home_team?.api_id)];
-  const awayLogos = [getTeamLogoUrl(away_team?.api_id)];
+  const homeLogos = [getTeamLogoUrl(home_team?.id)];
+  const awayLogos = [getTeamLogoUrl(away_team?.id)];
 
   // Blend user votes with base probabilities to prevent 0% or 100% jumps on first few votes
   // We treat the base probability as "10 virtual votes" to anchor the initial state

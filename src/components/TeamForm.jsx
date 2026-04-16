@@ -34,19 +34,19 @@ export default function TeamForm({ homeTeam, awayTeam, homeForm, awayForm }) {
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div>
             <span className="text-slate-500 block text-xs uppercase tracking-wider mb-1">Goals (Scored/Conceded)</span>
-            <span className="font-bold text-slate-900">{form.goals_scored || 0} / {form.goals_conceded || 0}</span>
+            <span className="font-bold text-slate-900">{form.goals_scored_last_n || 0} / {form.goals_conceded_last_n || 0}</span>
           </div>
           <div>
             <span className="text-slate-500 block text-xs uppercase tracking-wider mb-1">Avg xG</span>
-            <span className="font-bold text-slate-900">{form.xG ? Number(form.xG).toFixed(2) : 'N/A'}</span>
+            <span className="font-bold text-slate-900">{form.avg_xg != null ? Number(form.avg_xg).toFixed(2) : 'N/A'}</span>
           </div>
           <div>
             <span className="text-slate-500 block text-xs uppercase tracking-wider mb-1">Avg Shots</span>
-            <span className="font-bold text-slate-900">{form.shots || 'N/A'}</span>
+            <span className="font-bold text-slate-900">{form.avg_shots != null ? Number(form.avg_shots).toFixed(1) : 'N/A'}</span>
           </div>
           <div>
             <span className="text-slate-500 block text-xs uppercase tracking-wider mb-1">Pass Accuracy</span>
-            <span className="font-bold text-slate-900">{form.pass_accuracy ? `${form.pass_accuracy}%` : 'N/A'}</span>
+            <span className="font-bold text-slate-900">{form.avg_pass_accuracy != null ? `${Number(form.avg_pass_accuracy).toFixed(1)}%` : 'N/A'}</span>
           </div>
         </div>
       </div>

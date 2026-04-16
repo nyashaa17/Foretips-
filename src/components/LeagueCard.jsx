@@ -4,7 +4,7 @@ import SmartLogo from './SmartLogo';
 
 export default function LeagueCard({ league }) {
   const { id, api_id, name, country } = league;
-  const logos = [getLeagueLogoUrl(api_id)];
+  const logos = [getLeagueLogoUrl(id)];
 
   // Generate SEO-friendly URL slug
   const slug = name.toLowerCase().replace(/\s+/g, '-');

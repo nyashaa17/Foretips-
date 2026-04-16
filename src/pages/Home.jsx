@@ -111,23 +111,36 @@ export default function Home() {
       >
         {/* Animated Background Elements */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          {/* Floating Orbs */}
           <motion.div 
             animate={{ 
               scale: [1, 1.2, 1],
-              rotate: [0, 90, 0],
-              opacity: [0.03, 0.05, 0.03]
+              x: [0, 50, 0],
+              y: [0, 30, 0],
+              opacity: [0.1, 0.15, 0.1]
             }}
-            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-            className="absolute -top-24 -right-24 w-96 h-96 bg-green-500 rounded-full blur-3xl"
+            transition={{ duration: 15, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -top-24 -right-24 w-96 h-96 bg-green-400 rounded-full blur-3xl"
           />
           <motion.div 
             animate={{ 
               scale: [1, 1.3, 1],
-              rotate: [0, -90, 0],
-              opacity: [0.02, 0.04, 0.02]
+              x: [0, -40, 0],
+              y: [0, -50, 0],
+              opacity: [0.1, 0.15, 0.1]
             }}
-            transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
-            className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-500 rounded-full blur-3xl"
+            transition={{ duration: 20, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute -bottom-24 -left-24 w-96 h-96 bg-emerald-400 rounded-full blur-3xl"
+          />
+          <motion.div 
+            animate={{ 
+              scale: [1, 1.5, 1],
+              x: [0, 30, 0],
+              y: [0, -30, 0],
+              opacity: [0.05, 0.1, 0.05]
+            }}
+            transition={{ duration: 18, repeat: Infinity, ease: "easeInOut" }}
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-64 bg-blue-300 rounded-full blur-3xl"
           />
         </div>
 
@@ -148,7 +161,7 @@ export default function Home() {
             transition={{ delay: 0.3, duration: 0.5 }}
             className="text-4xl md:text-6xl font-extrabold text-slate-900 tracking-tight mb-6 leading-tight"
           >
-            AI-Powered <br />
+            Free AI-Powered <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-500">
               Football Tips
             </span>
@@ -160,22 +173,25 @@ export default function Home() {
             transition={{ delay: 0.4, duration: 0.5 }}
             className="text-lg text-slate-600 mb-8 max-w-xl mx-auto"
           >
-            Daily AI football predictions, advanced match analysis, and data-driven insights to help you make smarter bets.
+            Free daily AI football predictions, advanced match analysis, and data-driven insights to help you make smarter bets.
           </motion.p>
           
           <motion.div 
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex flex-wrap justify-center gap-3"
+            className="flex flex-row flex-wrap justify-center items-center gap-3"
           >
-            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2">
+            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
+              🎯 Daily Free tips
+            </span>
+            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
               🚀 Instant updates
             </span>
-            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2">
+            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
               🧠 AI powered
             </span>
-            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2">
+            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
               📱 Low data usage
             </span>
           </motion.div>

@@ -17,9 +17,9 @@ export default function MatchCard({ match }) {
     ? { name: rawAway, id: rawAway } 
     : (rawAway ? { ...rawAway, id: rawAway.id || rawAway.team_id, api_id: rawAway.api_id } : { name: 'Away Team' });
 
-  const leagueLogos = [getLeagueLogoUrl(league?.api_id)];
-  const homeLogos = [getTeamLogoUrl(home_team?.api_id)];
-  const awayLogos = [getTeamLogoUrl(away_team?.api_id)];
+  const leagueLogos = [getLeagueLogoUrl(league?.id)];
+  const homeLogos = [getTeamLogoUrl(home_team?.id)];
+  const awayLogos = [getTeamLogoUrl(away_team?.id)];
 
   return (
     <Link 

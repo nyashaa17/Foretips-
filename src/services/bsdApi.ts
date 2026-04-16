@@ -282,9 +282,9 @@ export const getOddsCompare = async (eventId: number | string): Promise<{ result
   return fetchBsdApi(`/api/odds/compare/?event=${eventId}`);
 };
 
-export const getImageUrl = (type: 'team' | 'league' | 'player', apiId: number): string => {
-  if (!apiId) return '';
-  return `/img/${type}/${apiId}/`;
+export const getImageUrl = (type: 'team' | 'league' | 'player', id: number | string): string => {
+  if (!id) return '';
+  return `/img/${type}/${id}/`;
 };
 
 export const isValueBet = (aiProb: number, decimalOdds: number): boolean => {
