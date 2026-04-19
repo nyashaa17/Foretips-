@@ -250,17 +250,53 @@ export const getMemoryCache = (cacheKey) => {
 const syncPredictionsToSupabase = async (predictions) => {
   if (!supabase) return;
   
+  // Fetch existing predictions to preserve pregame odds
+  const { data: existingData } = await supabase
+    .from('predictions')
+    .select('id, prediction_data')
+    .in('id', predictions.map(p => p.id));
+    
+  const existingMap = {};
+  if (existingData) {
+    existingData.forEach(e => {
+       existingMap[e.id] = e.prediction_data;
+    });
+  }
+
+  // Ensure items are enriched with pregame odds in-memory too so UI gets them immediately
+  predictions.forEach(p => {
+    const existingP = existingMap[p.id];
+    const isFinished = p.event && ['finished', 'Finished', 'FT', 'AET', 'PEN'].includes(p.event.status);
+    
+    if (existingP && existingP.pregame_odds_home) {
+      p.pregame_odds_home = existingP.pregame_odds_home;
+      p.pregame_odds_draw = existingP.pregame_odds_draw;
+      p.pregame_odds_away = existingP.pregame_odds_away;
+    } else if (existingP && existingP.event && !['finished', 'Finished', 'FT', 'AET', 'PEN'].includes(existingP.event.status) && existingP.event.odds_home) {
+      p.pregame_odds_home = existingP.event.odds_home;
+      p.pregame_odds_draw = existingP.event.odds_draw;
+      p.pregame_odds_away = existingP.event.odds_away;
+    } else if (!isFinished && p.event && p.event.odds_home) {
+      p.pregame_odds_home = p.event.odds_home;
+      p.pregame_odds_draw = p.event.odds_draw;
+      p.pregame_odds_away = p.event.odds_away;
+    }
+  });
+
   // Upsert predictions into the 'predictions' table
   const { error } = await supabase
     .from('predictions')
-    .upsert(predictions.map(p => ({
-      id: p.id,
-      match_id: p.match_id || p.id,
-      home_team: p.home_team || (p.event ? p.event.home_team : null),
-      away_team: p.away_team || (p.event ? p.event.away_team : null),
-      prediction_data: p,
-      updated_at: new Date().toISOString()
-    })));
+    .upsert(predictions.map(p => {
+      let savedData = { ...p };
+      return {
+        id: p.id,
+        match_id: p.match_id || p.id,
+        home_team: p.home_team || (p.event ? p.event.home_team : null),
+        away_team: p.away_team || (p.event ? p.event.away_team : null),
+        prediction_data: savedData,
+        updated_at: new Date().toISOString()
+      };
+    }));
     
   if (error) console.error('Error syncing predictions to Supabase:', error);
 };

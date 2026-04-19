@@ -1,3 +1,5 @@
+import { supabase } from '../supabaseClient';
+
 export const API_BASE_URL = '/api';
 
 export interface LiveMatch {
@@ -332,9 +334,49 @@ export const getEventDetails = async (id: number | string): Promise<Match | null
   return fetchBsdApi(`/api/events/${id}/`);
 };
 
+const enrichWithPregameOdds = async (items: any[]) => {
+  if (!supabase || !items || !items.length) return items;
+  try {
+    const ids = items.map(i => i.id).filter(id => id);
+    if (!ids.length) return items;
+    
+    // Fetch stored prediction_data where we preserved pregame odds
+    const { data: dbData } = await supabase
+      .from('predictions')
+      .select('id, prediction_data')
+      .in('id', ids);
+      
+    if (dbData && dbData.length > 0) {
+      const dbMap: Record<string, any> = {};
+      dbData.forEach(r => { dbMap[r.id] = r.prediction_data; });
+      
+      return items.map(p => {
+        const dbP = dbMap[p.id];
+        if (dbP) {
+          if (dbP.pregame_odds_home) {
+            p.pregame_odds_home = dbP.pregame_odds_home;
+            p.pregame_odds_draw = dbP.pregame_odds_draw;
+            p.pregame_odds_away = dbP.pregame_odds_away;
+          } else if (dbP.event && !['finished', 'Finished', 'FT', 'AET', 'PEN'].includes(dbP.event.status) && dbP.event.odds_home) {
+            p.pregame_odds_home = dbP.event.odds_home;
+            p.pregame_odds_draw = dbP.event.odds_draw;
+            p.pregame_odds_away = dbP.event.odds_away;
+          }
+        }
+        return p;
+      });
+    }
+  } catch (e) {
+    console.error('Failed to enrich predictions with pregame odds:', e);
+  }
+  return items;
+};
+
 export const getPredictionDetails = async (id: number | string): Promise<Prediction | null> => {
   const data = await fetchBsdApi(`/api/predictions/${id}/`);
-  return data ? normalizePrediction(data) : null;
+  if (!data) return null;
+  const enriched = await enrichWithPregameOdds([data]);
+  return normalizePrediction(enriched[0]);
 };
 
 export const getPredictions = async (params: Record<string, any> = {}): Promise<{ results: Prediction[] }> => {
@@ -348,7 +390,8 @@ export const getPredictions = async (params: Record<string, any> = {}): Promise<
   const url = `/api/predictions/${queryString ? `?${queryString}` : ''}`;
   const data = await fetchBsdApi(url);
   if (data && data.results) {
-    data.results = data.results.map(normalizePrediction);
+    const enriched = await enrichWithPregameOdds(data.results);
+    data.results = enriched.map(normalizePrediction);
   }
   return data;
 };
@@ -356,7 +399,9 @@ export const getPredictions = async (params: Record<string, any> = {}): Promise<
 export const getPredictionByEventId = async (eventId: number | string): Promise<Prediction | null> => {
   const data = await fetchBsdApi(`/api/predictions/?event=${eventId}`);
   const result = data?.results?.[0] || null;
-  return result ? normalizePrediction(result) : null;
+  if (!result) return null;
+  const enriched = await enrichWithPregameOdds([result]);
+  return normalizePrediction(enriched[0]);
 };
 
 export const getPlayerStats = async (eventId: number | string): Promise<{ results: PlayerStat[] }> => {

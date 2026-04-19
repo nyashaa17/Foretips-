@@ -9,6 +9,7 @@ import ConfirmationModal from '../components/ConfirmationModal';
 import { getTeamLogoUrl } from '../services/api';
 import SmartLogo from '../components/SmartLogo';
 import AdminDashboard from './AdminDashboard';
+import { generateMatchSlug } from '../utils/url';
 
 function HistoryItem({ item, onDelete }) {
   const event = item.event || item;
@@ -25,10 +26,11 @@ function HistoryItem({ item, onDelete }) {
   
   const homeLogos = [getTeamLogoUrl(home?.api_id)];
   const awayLogos = [getTeamLogoUrl(away?.api_id)];
+  const matchSlug = generateMatchSlug(home?.name, away?.name, item.id);
 
   return (
     <Link 
-      to={`/match/${item.id}`}
+      to={`/match/${matchSlug}`}
       state={{ prediction: item }}
       className="group bg-white p-4 rounded-xl border border-slate-200 shadow-sm hover:border-green-500 transition-all relative"
     >

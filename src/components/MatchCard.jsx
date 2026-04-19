@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import SmartLogo from './SmartLogo';
 import { getTeamLogoUrl, getLeagueLogoUrl } from '../services/api';
+import { generateMatchSlug } from '../utils/url';
 
 export default function MatchCard({ match }) {
   const { id, event_date, league, home_score, away_score, status } = match;
@@ -20,10 +21,11 @@ export default function MatchCard({ match }) {
   const leagueLogos = [getLeagueLogoUrl(league?.id)];
   const homeLogos = [getTeamLogoUrl(home_team?.id)];
   const awayLogos = [getTeamLogoUrl(away_team?.id)];
+  const matchSlug = generateMatchSlug(home_team?.name, away_team?.name, id);
 
   return (
     <Link 
-      to={`/match/${id}`}
+      to={`/match/${matchSlug}`}
       className="block bg-white rounded-xl border border-slate-200 overflow-hidden hover:border-green-500/50 hover:shadow-lg hover:shadow-green-500/10 transition-all"
     >
       <div className="flex items-center justify-between p-3 border-b border-slate-100 bg-slate-50">

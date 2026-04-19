@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Activity } from 'lucide-react';
 import { getImageUrl, formatMinute } from '../services/bsdApi';
 import SmartLogo from './SmartLogo';
+import { generateMatchSlug } from '../utils/url';
 
 export default function LiveMatchCard({ match }) {
   const { 
@@ -36,12 +37,14 @@ export default function LiveMatchCard({ match }) {
   const leagueLogos = [getImageUrl('league', league?.id)];
   const homeLogos = [getImageUrl('team', home_team?.id)];
   const awayLogos = [getImageUrl('team', away_team?.id)];
+  
+  const matchSlug = generateMatchSlug(home_team?.name, away_team?.name, id);
 
   const sortedIncidents = incidents ? [...incidents].sort((a, b) => a.minute - b.minute) : [];
 
   return (
     <Link 
-      to={`/match/${id}`}
+      to={`/match/${matchSlug}`}
       className="block bg-white rounded-xl border border-red-200 overflow-hidden hover:border-red-400 transition-colors relative shadow-sm"
     >
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>

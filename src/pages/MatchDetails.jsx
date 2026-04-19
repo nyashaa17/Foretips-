@@ -49,10 +49,18 @@ const StatBar = ({ label, home, away, type = 'percentage' }) => {
 };
 
 export default function MatchDetails() {
-  const { id } = useParams();
+  const { id: routeId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const initialPrediction = location.state?.prediction || null;
+  
+  // Extract real ID if routeId is a slug (e.g. man-utd-vs-liverpool-4521)
+  const id = React.useMemo(() => {
+    if (!routeId) return null;
+    const parts = routeId.split('-');
+    const lastPart = parts[parts.length - 1];
+    return /^\d+$/.test(lastPart) ? lastPart : routeId;
+  }, [routeId]);
   
   const [match, setMatch] = useState(initialPrediction);
   const [eventDetails, setEventDetails] = useState(null);
@@ -259,8 +267,25 @@ export default function MatchDetails() {
   const { status, home_score, away_score } = event;
   const prediction = match.predictions?.[0] || match.prediction || (match.predicted_result ? match : null);
 
-  const seoTitle = `${home_team?.name} vs ${away_team?.name} Prediction & Analysis`;
-  const seoDescription = `Expert prediction and statistical analysis for ${home_team?.name} vs ${away_team?.name} in the ${league?.name}. Get win probabilities, predicted score, and AI-driven insights.`;
+  const seoTitle = `Watch ${home_team?.name} vs ${away_team?.name} Free Stream - Live Score & Lineups`;
+  const seoDescription = `Live update, expert prediction and statistical analysis for ${home_team?.name} vs ${away_team?.name} in the ${league?.name}. Get lineups, live score and free stream info.`;
+
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "SportsEvent",
+    "name": `${home_team?.name} vs ${away_team?.name}`,
+    "startDate": event_date,
+    "homeTeam": {
+      "@type": "SportsTeam",
+      "name": home_team?.name
+    },
+    "awayTeam": {
+      "@type": "SportsTeam",
+      "name": away_team?.name
+    },
+    "sport": "Soccer",
+    "description": seoDescription
+  };
 
   const homeLogos = [getImageUrl('team', home_team?.id)];
   const awayLogos = [getImageUrl('team', away_team?.id)];
@@ -282,6 +307,7 @@ export default function MatchDetails() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <SEO title={seoTitle} description={seoDescription} />
       <button onClick={handleBack} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors">
         <ChevronLeft className="w-4 h-4" />

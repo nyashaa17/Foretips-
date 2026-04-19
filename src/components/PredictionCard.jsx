@@ -4,6 +4,7 @@ import { saveToHistory } from '../services/api';
 import { isValueBet, getImageUrl } from '../services/bsdApi';
 import { hapticFeedback } from '../utils/haptics';
 import { getPreviewUrl } from '../utils/image';
+import { generateMatchSlug } from '../utils/url';
 import clsx from 'clsx';
 import { Brain, Share2, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
@@ -63,9 +64,9 @@ export default function PredictionCard({ prediction }) {
   // Real-time odds from API (event object) or calculated from probabilities
   // If match is finished, prefer the pre-match odds stored in the prediction object if available
   const displayOdds = {
-    home: (isMatchFinished && prediction.odds_home) ? prediction.odds_home : (event.odds_home || (prob_home_win ? (100 / prob_home_win).toFixed(2) : null)),
-    draw: (isMatchFinished && prediction.odds_draw) ? prediction.odds_draw : (event.odds_draw || (prob_draw ? (100 / prob_draw).toFixed(2) : null)),
-    away: (isMatchFinished && prediction.odds_away) ? prediction.odds_away : (event.odds_away || (prob_away_win ? (100 / prob_away_win).toFixed(2) : null))
+    home: (isMatchFinished && prediction.pregame_odds_home) ? prediction.pregame_odds_home : (event.odds_home || (prob_home_win ? (100 / prob_home_win).toFixed(2) : null)),
+    draw: (isMatchFinished && prediction.pregame_odds_draw) ? prediction.pregame_odds_draw : (event.odds_draw || (prob_draw ? (100 / prob_draw).toFixed(2) : null)),
+    away: (isMatchFinished && prediction.pregame_odds_away) ? prediction.pregame_odds_away : (event.odds_away || (prob_away_win ? (100 / prob_away_win).toFixed(2) : null))
   };
 
   let actualResult = null;
@@ -83,6 +84,8 @@ export default function PredictionCard({ prediction }) {
   const leagueLogos = [getImageUrl('league', league?.id)];
   const homeLogos = [getImageUrl('team', home_team?.id)];
   const awayLogos = [getImageUrl('team', away_team?.id)];
+
+  const matchSlug = generateMatchSlug(home_team?.name, away_team?.name, id);
 
   const getConfidenceColor = (conf) => {
     if (!conf) return 'bg-slate-100 text-slate-400 border-slate-200';
@@ -115,7 +118,7 @@ export default function PredictionCard({ prediction }) {
     const leagueName = league?.name || 'League';
     
     if (!cardRef.current) {
-      const fallbackText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\nCheck out full details here: ${window.location.origin}/match/${id}`;
+      const fallbackText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\nCheck out full details here: ${window.location.origin}/match/${matchSlug}`;
       const url = `https://wa.me/?text=${encodeURIComponent(fallbackText)}`;
       window.open(url, '_blank');
       return;
@@ -175,7 +178,7 @@ export default function PredictionCard({ prediction }) {
         console.warn('Could not fetch or generate AI analysis for sharing:', err);
       }
 
-      const captionText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\n${aiAnalysisText ? `🤖 AI Analysis:\n${aiAnalysisText}\n\n` : ''}Check out full details here: ${window.location.origin}/match/${id}`;
+      const captionText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\n${aiAnalysisText ? `🤖 AI Analysis:\n${aiAnalysisText}\n\n` : ''}Check out full details here: ${window.location.origin}/match/${matchSlug}`;
       
       // Capture the card as a blob using html-to-image
       const blob = await htmlToImage.toBlob(cardRef.current, {
@@ -226,7 +229,7 @@ export default function PredictionCard({ prediction }) {
     } catch (error) {
       console.error('Error generating image:', error);
       setIsSharing(false);
-      const fallbackText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\nCheck out full details here: ${window.location.origin}/match/${id}`;
+      const fallbackText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\nCheck out full details here: ${window.location.origin}/match/${matchSlug}`;
       const url = `https://wa.me/?text=${encodeURIComponent(fallbackText)}`;
       window.open(url, '_blank');
     }
@@ -421,7 +424,7 @@ export default function PredictionCard({ prediction }) {
       {/* Action */}
       <div className="px-4 pb-4 flex gap-2">
         <Link 
-          to={`/match/${id}`}
+          to={`/match/${matchSlug}`}
           state={{ prediction }}
           onClick={() => {
             hapticFeedback('light');
