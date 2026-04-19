@@ -8,29 +8,30 @@ import { Suspense, lazy } from 'react';
 import ScrollToTop from './components/ScrollToTop';
 import CookieConsent from './components/CookieConsent';
 import Layout from './components/Layout';
+
 const Home = lazy(() => import('./pages/Home'));
 const Predictions = lazy(() => import('./pages/Predictions'));
 const LiveScores = lazy(() => import('./pages/LiveScores'));
 const Leagues = lazy(() => import('./pages/Leagues'));
 const MatchDetails = lazy(() => import('./pages/MatchDetails'));
-import TeamDetails from './pages/TeamDetails';
-import PlayerDetails from './pages/PlayerDetails';
+const TeamDetails = lazy(() => import('./pages/TeamDetails'));
+const PlayerDetails = lazy(() => import('./pages/PlayerDetails'));
 const LeaguePredictions = lazy(() => import('./pages/LeaguePredictions'));
-import Blog from './pages/Blog';
-import BlogPost from './pages/BlogPost';
-import About from './pages/About';
-import FAQ from './pages/FAQ';
-import PrivacyPolicy from './pages/PrivacyPolicy';
-import TermsOfService from './pages/TermsOfService';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
-import SubmitTip from './pages/SubmitTip';
-import Leaderboard from './pages/Leaderboard';
+const Blog = lazy(() => import('./pages/Blog'));
+const BlogPost = lazy(() => import('./pages/BlogPost'));
+const About = lazy(() => import('./pages/About'));
+const FAQ = lazy(() => import('./pages/FAQ'));
+const PrivacyPolicy = lazy(() => import('./pages/PrivacyPolicy'));
+const TermsOfService = lazy(() => import('./pages/TermsOfService'));
+const SignIn = lazy(() => import('./pages/SignIn'));
+const SignUp = lazy(() => import('./pages/SignUp'));
+const SubmitTip = lazy(() => import('./pages/SubmitTip'));
+const Leaderboard = lazy(() => import('./pages/Leaderboard'));
 const Dashboard = lazy(() => import('./pages/Dashboard'));
-import UserProfile from './pages/UserProfile';
-import AdminRoute from './components/AdminRoute';
-import { AdManager } from './components/AdManager';
-import NotFound from './pages/NotFound';
+const UserProfile = lazy(() => import('./pages/UserProfile'));
+const AdminRoute = lazy(() => import('./components/AdminRoute'));
+const AdManager = lazy(() => import('./components/AdManager').then(m => ({ default: m.AdManager })));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 export default function App() {
   return (

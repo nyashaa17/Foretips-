@@ -50,9 +50,12 @@ export default function SmartLogo({ urls = [], alt = 'Logo', className = '', fal
     <img
       src={getPreviewUrl(currentUrl)}
       alt={alt}
+      width="48"
+      height="48"
       className={className}
       onError={handleError}
       referrerPolicy="no-referrer"
+      loading="lazy"
     />
   );
 }
