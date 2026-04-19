@@ -6,7 +6,6 @@ import { format } from 'date-fns';
 import { ChevronLeft, TrendingUp, Activity, Target, Shield, Sparkles, Trophy, Clock, Info, Flag, Users } from 'lucide-react';
 import SEO from '../components/SEO';
 import clsx from 'clsx';
-import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabaseClient';
 import { AdPlacement } from '../components/AdPlacement';
 import ReactMarkdown from 'react-markdown';
@@ -175,6 +174,7 @@ export default function MatchDetails() {
     // 2. Generate if not in cache
     try {
       setAnalyzing(true);
+      const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const model = "gemini-3-flash-preview";
       

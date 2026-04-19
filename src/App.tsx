@@ -8,8 +8,8 @@ import { Suspense, lazy } from 'react';
 import ScrollToTop from './components/ScrollToTop';
 import CookieConsent from './components/CookieConsent';
 import Layout from './components/Layout';
+import Home from './pages/Home';
 
-const Home = lazy(() => import('./pages/Home'));
 const Predictions = lazy(() => import('./pages/Predictions'));
 const LiveScores = lazy(() => import('./pages/LiveScores'));
 const Leagues = lazy(() => import('./pages/Leagues'));

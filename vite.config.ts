@@ -25,8 +25,11 @@ export default defineConfig(({mode}) => {
             if (id.includes('node_modules/react') || id.includes('node_modules/react-dom')) {
               return 'react-vendor';
             }
-            if (id.includes('node_modules/recharts') || id.includes('node_modules/framer-motion') || id.includes('node_modules/motion')) {
-              return 'ui-vendor';
+            if (id.includes('node_modules/recharts')) {
+              return 'chart-vendor';
+            }
+            if (id.includes('node_modules/framer-motion') || id.includes('node_modules/motion')) {
+              return 'motion-vendor';
             }
           }
         }
