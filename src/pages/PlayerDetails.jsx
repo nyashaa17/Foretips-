@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { getPlayerProfile, getPlayerMatchStats } from '../services/api';
 import { User, Activity, ArrowRightLeft, Calendar, TrendingUp } from 'lucide-react';
 import SmartLogo from '../components/SmartLogo';
+import SEO from '../components/SEO';
 
 export default function PlayerDetails() {
   const { playerId } = useParams();
@@ -55,7 +56,10 @@ export default function PlayerDetails() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
-      
+      <SEO 
+        title={`${player.name} Profile & Stats`} 
+        description={`View ${player.name}'s latest football stats, transfer history, and performance analysis.`}
+      />
       {/* Player Data Section */}
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
         <div className="p-6 border-b border-slate-100 flex items-center gap-3">

@@ -1,9 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Home, AlertCircle } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function NotFound() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 sm:px-6 lg:px-8">
+      <SEO 
+        title="Page Not Found" 
+        description="The page you are looking for does not exist on Foretips."
+      />
       <div className="max-w-md w-full text-center space-y-8">
         <div>
           <div className="mx-auto flex items-center justify-center h-24 w-24 rounded-full bg-red-100 mb-8">

@@ -79,9 +79,6 @@ export default function Predictions() {
         const dateStr = date.toISOString().split('T')[0];
         
         params = { date_from: dateStr, date_to: dateStr };
-        if (filter === 'yesterday') {
-          params.upcoming = false;
-        }
       } else {
         // If custom but dates not set, just fetch today
         const dateStr = new Date().toISOString().split('T')[0];

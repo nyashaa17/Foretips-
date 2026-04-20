@@ -1,60 +1,40 @@
-import { useEffect } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
 export default function SEO({ title, description, keywords, image, type = 'website' }) {
   const location = useLocation();
   const siteName = 'Foretips';
-  const fullTitle = title ? `${title} | ${siteName}` : `${siteName} - Data-Driven Football Predictions`;
-  const url = `https://foretips.com${location.pathname}`;
+  const fullTitle = title ? `${title} | ${siteName}` : `${siteName} | AI-Powered Football Predictions & Match Analysis`;
+  const url = `https://foretips.co.zw${location.pathname}`;
 
-  useEffect(() => {
-    // Update document title
-    document.title = fullTitle;
+  const defaultImage = 'https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/og.jpg';
+  const finalImage = image || defaultImage;
+  const isJpg = finalImage.endsWith('.jpg') || finalImage.endsWith('.jpeg');
+  const imageType = isJpg ? 'image/jpeg' : 'image/png';
 
-    // Update meta description
-    const metaDescription = document.querySelector('meta[name="description"]');
-    if (metaDescription) {
-      metaDescription.setAttribute('content', description || 'Advanced football match analysis and data-driven insights to help you make smarter bets.');
-    }
+  const finalDescription = description || 'Get daily AI-powered football tips, advanced match analysis, and data-driven insights to help you make smarter betting decisions.';
 
-    // Update or create meta keywords
-    if (keywords) {
-      let metaKeywords = document.querySelector('meta[name="keywords"]');
-      if (!metaKeywords) {
-        metaKeywords = document.createElement('meta');
-        metaKeywords.setAttribute('name', 'keywords');
-        document.head.appendChild(metaKeywords);
-      }
-      metaKeywords.setAttribute('content', keywords);
-    }
+  return (
+    <Helmet>
+      <title>{fullTitle}</title>
+      <meta name="description" content={finalDescription} />
+      {keywords && <meta name="keywords" content={keywords} />}
+      
+      <link rel="canonical" href={url} />
 
-    // Update Open Graph tags
-    const ogTitle = document.querySelector('meta[property="og:title"]');
-    if (ogTitle) ogTitle.setAttribute('content', fullTitle);
+      <meta property="og:title" content={fullTitle} />
+      <meta property="og:description" content={finalDescription} />
+      <meta property="og:url" content={url} />
+      <meta property="og:image" content={finalImage} />
+      <meta property="og:image:type" content={imageType} />
+      <meta property="og:type" content={type} />
+      <meta property="og:site_name" content={siteName} />
 
-    const ogUrl = document.querySelector('meta[property="og:url"]');
-    if (ogUrl) ogUrl.setAttribute('content', url);
-
-    const ogDescription = document.querySelector('meta[property="og:description"]');
-    if (ogDescription) ogDescription.setAttribute('content', description || 'Advanced football match analysis and data-driven insights.');
-
-    const defaultImage = 'https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/og.webp';
-    const finalImage = image || defaultImage;
-
-    const ogImage = document.querySelector('meta[property="og:image"]');
-    if (ogImage) ogImage.setAttribute('content', finalImage);
-
-    // Update Twitter tags
-    const twitterTitle = document.querySelector('meta[name="twitter:title"]');
-    if (twitterTitle) twitterTitle.setAttribute('content', fullTitle);
-
-    const twitterDescription = document.querySelector('meta[name="twitter:description"]');
-    if (twitterDescription) twitterDescription.setAttribute('content', description || 'Advanced football match analysis and data-driven insights.');
-
-    const twitterImage = document.querySelector('meta[name="twitter:image"]');
-    if (twitterImage) twitterImage.setAttribute('content', finalImage);
-
-  }, [fullTitle, description, url, image]);
-
-  return null;
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={fullTitle} />
+      <meta name="twitter:description" content={finalDescription} />
+      <meta name="twitter:image" content={finalImage} />
+      <meta name="twitter:url" content={url} />
+    </Helmet>
+  );
 }

@@ -303,7 +303,7 @@ const syncPredictionsToSupabase = async (predictions) => {
 
 export const getPredictionsCacheKey = (params = {}) => {
   const sortedParams = Object.keys(params).sort().reduce((acc, key) => {
-    if (key !== 'paginate') {
+    if (key !== 'paginate' && key !== 'maxPages') {
       acc[key] = params[key];
     }
     return acc;
@@ -319,7 +319,7 @@ export const getPredictions = async (params = {}, forceRefresh = false) => {
   // If no data in Supabase, data is stale, or forceRefresh is true, fetch from API
   const cacheKey = getPredictionsCacheKey(params);
   const sortedParams = Object.keys(params).sort().reduce((acc, key) => {
-    if (key !== 'paginate') {
+    if (key !== 'paginate' && key !== 'maxPages') {
       acc[key] = params[key];
     }
     return acc;
@@ -347,7 +347,8 @@ export const getPredictions = async (params = {}, forceRefresh = false) => {
       
       // Loop to fetch all pages
       let pageCount = 0;
-      while (nextUrl && pageCount < 20) {
+      let maxPages = params.maxPages || 20;
+      while (nextUrl && pageCount < maxPages) {
         pageCount++;
         console.log(`[getPredictions] Fetching page ${pageCount + 1}...`);
         // Extract the query string from the nextUrl

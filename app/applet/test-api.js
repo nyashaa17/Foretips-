@@ -1,19 +1,16 @@
-import fetch from 'node-fetch';
+import { getPredictions } from './src/services/api.js';
 
 async function test() {
-  const res = await fetch('https://sports.bzzoiro.com/api/events/?status=finished');
-  const json = await res.json();
-  if (json.results && json.results.length > 0) {
-    const event = json.results.find(e => e.momentum || e.shotmap || e.average_positions);
-    if (event) {
-      console.log('Momentum:', JSON.stringify(event.momentum)?.substring(0, 100));
-      console.log('Shotmap:', JSON.stringify(event.shotmap)?.substring(0, 100));
-      console.log('Avg Pos:', JSON.stringify(event.average_positions)?.substring(0, 100));
-    } else {
-      console.log('No events with spatial data found.');
-    }
-  } else {
-    console.log('No finished events found.');
-  }
+  const date = new Date();
+  date.setDate(date.getDate() - 1);
+  const dateStr = date.toISOString().split('T')[0];
+  
+  console.log('Fetching without upcoming parameter...');
+  const res1 = await getPredictions({ date_from: dateStr, date_to: dateStr, paginate: true });
+  console.log('Count:', res1?.results?.length);
+
+  console.log('Fetching with upcoming=false...');
+  const res2 = await getPredictions({ date_from: dateStr, date_to: dateStr, upcoming: false, paginate: true });
+  console.log('Count:', res2?.results?.length);
 }
 test();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import { User, Mail, TrendingUp, Award, Clock } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function UserProfile() {
   const [user, setUser] = useState(null);
@@ -63,6 +64,11 @@ export default function UserProfile() {
 
   return (
     <div className="max-w-4xl mx-auto p-6">
+      <SEO 
+        title="My Profile" 
+        description="Manage your Foretips account, view your stats, and update your profile settings."
+        type="profile"
+      />
       <h1 className="text-3xl font-black text-slate-900 mb-8">My Profile</h1>
       
       <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 mb-8">

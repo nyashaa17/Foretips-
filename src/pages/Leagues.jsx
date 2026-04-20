@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getLeagues } from '../services/api';
 import LeagueCard from '../components/LeagueCard';
 import { Trophy } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function Leagues() {
   const [leagues, setLeagues] = useState([]);
@@ -27,6 +28,10 @@ export default function Leagues() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title="Football Leagues" 
+        description="Browse football predictions, betting tips, and match stats by league."
+      />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">

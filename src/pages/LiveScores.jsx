@@ -3,6 +3,7 @@ import { getLiveMatches } from '../services/bsdApi';
 import LiveMatchCard from '../components/LiveMatchCard';
 import { MatchSkeleton } from '../components/LoadingSkeleton';
 import { Activity, RefreshCw } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function LiveScores() {
   const [matches, setMatches] = useState([]);
@@ -36,13 +37,17 @@ export default function LiveScores() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title="Live Football Tips Today" 
+        description="Live AI-powered football predictions and real-time match tips updated daily on Foretips." 
+      />
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-8">
         <div>
           <div className="flex items-center gap-3 mb-2">
             <div className="bg-red-100 p-2 rounded-lg">
               <Activity className="w-6 h-6 text-red-600 animate-pulse" />
             </div>
-            <h1 className="text-3xl font-bold text-slate-900">Live Scores</h1>
+          <h1 className="text-3xl font-bold text-slate-900">Live Scores</h1>
           </div>
           <p className="text-slate-500">Real-time match updates, stats, and incidents.</p>
         </div>

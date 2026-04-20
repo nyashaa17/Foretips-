@@ -7,6 +7,7 @@ import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import NotFound from './NotFound';
 import { ChevronLeft, Trophy, CalendarDays } from 'lucide-react';
 import React from 'react';
+import SEO from '../components/SEO';
 
 export default function LeaguePredictions() {
   const { leagueSlug } = useParams();
@@ -55,6 +56,10 @@ export default function LeaguePredictions() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <SEO 
+        title={leagueInfo ? `${leagueInfo.name} Predictions` : 'League Predictions'} 
+        description={`Latest AI football predictions, betting tips, and analysis for ${leagueInfo ? leagueInfo.name : 'this league'}.`}
+      />
       <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors">
         <ChevronLeft className="w-4 h-4" />
         Back

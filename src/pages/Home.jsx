@@ -36,10 +36,7 @@ export default function Home() {
       }
       const dateStr = date.toISOString().split('T')[0];
       
-      const params = { date_from: dateStr, date_to: dateStr };
-      if (filter === 'yesterday') {
-        params.upcoming = false;
-      }
+      const params = { date_from: dateStr, date_to: dateStr, maxPages: 2 };
 
       const cacheKey = getPredictionsCacheKey(params);
       const cached = getMemoryCache(cacheKey);

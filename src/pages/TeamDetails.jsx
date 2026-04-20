@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, Link, useSearchParams } from 'react-router-dom';
 import { getSquad } from '../services/api';
 import { Users, Calendar } from 'lucide-react';
+import SEO from '../components/SEO';
 
 export default function TeamDetails() {
   const { teamId } = useParams();
@@ -47,6 +48,10 @@ export default function TeamDetails() {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
+      <SEO 
+        title="Team Squad & Roster" 
+        description="View the complete team roster, player profiles, and squad details."
+      />
       <h1 className="text-3xl font-bold mb-8 text-slate-900">Team Squad</h1>
       
       <div className="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
