@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import { getEventDetails, getPredictionDetails, getPredictionByEventId, getPlayerStats, getPredictedLineup, getOddsCompare, getImageUrl } from '../services/bsdApi';
 import { saveToHistory } from '../services/api';
@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { ChevronLeft, TrendingUp, Activity, Target, Shield, Sparkles, Trophy, Clock, Info, Flag, Users } from 'lucide-react';
 import SEO from '../components/SEO';
 import clsx from 'clsx';
+import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabaseClient';
 import { AdPlacement } from '../components/AdPlacement';
 import ReactMarkdown from 'react-markdown';
@@ -54,7 +55,7 @@ export default function MatchDetails() {
   const initialPrediction = location.state?.prediction || null;
   
   // Extract real ID if routeId is a slug (e.g. man-utd-vs-liverpool-4521)
-  const id = React.useMemo(() => {
+  const id = useMemo(() => {
     if (!routeId) return null;
     const parts = routeId.split('-');
     const lastPart = parts[parts.length - 1];
@@ -174,7 +175,6 @@ export default function MatchDetails() {
     // 2. Generate if not in cache
     try {
       setAnalyzing(true);
-      const { GoogleGenAI } = await import('@google/genai');
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const model = "gemini-3-flash-preview";
       

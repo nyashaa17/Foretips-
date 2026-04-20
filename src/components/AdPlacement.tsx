@@ -91,7 +91,6 @@ export function AdPlacement({ position, className }: AdPlacementProps) {
             alt={`Advertisement - ${position}`} 
             className="w-full h-24 object-contain transition-all duration-300 hover:scale-[1.02] cursor-pointer"
             referrerPolicy="no-referrer"
-            loading="lazy"
           />
         </a>
       </div>

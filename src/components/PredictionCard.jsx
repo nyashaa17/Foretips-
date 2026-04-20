@@ -8,7 +8,9 @@ import { generateMatchSlug } from '../utils/url';
 import clsx from 'clsx';
 import { Brain, Share2, Loader2 } from 'lucide-react';
 import { useRef, useState } from 'react';
+import * as htmlToImage from 'html-to-image';
 import { supabase } from '../supabaseClient';
+import { GoogleGenAI } from "@google/genai";
 
 import SmartLogo from './SmartLogo';
 
@@ -140,7 +142,6 @@ export default function PredictionCard({ prediction }) {
           aiAnalysisText = cached.data;
         } else {
           // Generate on the fly if not cached
-          const { GoogleGenAI } = await import('@google/genai');
           const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY || process.env.GEMINI_API_KEY });
           const model = "gemini-3-flash-preview";
           
@@ -178,9 +179,6 @@ export default function PredictionCard({ prediction }) {
       }
 
       const captionText = `🏆 Foretips Prediction\n⚽ ${homeName} vs ${awayName}\n\n${aiAnalysisText ? `🤖 AI Analysis:\n${aiAnalysisText}\n\n` : ''}Check out full details here: ${window.location.origin}/match/${matchSlug}`;
-      
-      // Dynamically import html-to-image
-      const htmlToImage = await import('html-to-image');
       
       // Capture the card as a blob using html-to-image
       const blob = await htmlToImage.toBlob(cardRef.current, {
