@@ -2,7 +2,60 @@ import React from 'react';
 import { ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 export default function OddsComparison({ odds }) {
-  if (!odds || !Array.isArray(odds) || odds.length === 0) return null;
+  if (!odds) return null;
+
+  // Handle v2 format
+  if (odds.home_win || odds.odds) {
+    const v2Odds = odds.odds || odds;
+    return (
+      <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8">
+        <h3 className="text-xl font-bold text-slate-900 mb-4">Consensus Odds</h3>
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="text-center p-3 bg-slate-50 rounded-xl">
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">1 (Home)</div>
+            <div className="font-bold text-lg text-slate-900">{v2Odds.home_win?.toFixed(2) || '-'}</div>
+          </div>
+          <div className="text-center p-3 bg-slate-50 rounded-xl">
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">X (Draw)</div>
+            <div className="font-bold text-lg text-slate-900">{v2Odds.draw?.toFixed(2) || '-'}</div>
+          </div>
+          <div className="text-center p-3 bg-slate-50 rounded-xl">
+            <div className="text-xs text-slate-500 uppercase tracking-wider mb-1">2 (Away)</div>
+            <div className="font-bold text-lg text-slate-900">{v2Odds.away_win?.toFixed(2) || '-'}</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="flex justify-between items-center p-2 rounded-lg border border-slate-100">
+            <span className="text-sm text-slate-600">Over 1.5</span>
+            <span className="font-bold text-sm">{v2Odds.over_15_goals?.toFixed(2) || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 rounded-lg border border-slate-100">
+            <span className="text-sm text-slate-600">Over 2.5</span>
+            <span className="font-bold text-sm">{v2Odds.over_25_goals?.toFixed(2) || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 rounded-lg border border-slate-100">
+            <span className="text-sm text-slate-600">Under 1.5</span>
+            <span className="font-bold text-sm">{v2Odds.under_15_goals?.toFixed(2) || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 rounded-lg border border-slate-100">
+            <span className="text-sm text-slate-600">Under 2.5</span>
+            <span className="font-bold text-sm">{v2Odds.under_25_goals?.toFixed(2) || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 rounded-lg border border-slate-100">
+            <span className="text-sm text-slate-600">BTTS (Yes)</span>
+            <span className="font-bold text-sm">{v2Odds.btts_yes?.toFixed(2) || '-'}</span>
+          </div>
+          <div className="flex justify-between items-center p-2 rounded-lg border border-slate-100">
+            <span className="text-sm text-slate-600">BTTS (No)</span>
+            <span className="font-bold text-sm">{v2Odds.btts_no?.toFixed(2) || '-'}</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!Array.isArray(odds) || odds.length === 0) return null;
 
   return (
     <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-8">

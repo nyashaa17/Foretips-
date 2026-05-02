@@ -7,7 +7,7 @@ import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import CommunityTipsPreview from '../components/CommunityTipsPreview';
 import LeaderboardPreview from '../components/LeaderboardPreview';
 import FAQSection from '../components/FAQSection';
-import { TrendingUp, Activity, ChevronRight, Star, Calendar, Trophy, MessageCircle, Zap, Users, Medal } from 'lucide-react';
+import { TrendingUp, Activity, ChevronRight, Star, Calendar, Trophy, MessageCircle, Zap, Users, Medal, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { hapticFeedback } from '../utils/haptics';
 import SEO from '../components/SEO';
@@ -177,19 +177,19 @@ export default function Home() {
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.5 }}
-            className="flex flex-row flex-wrap justify-center items-center gap-3"
+            className="grid grid-cols-2 sm:flex sm:flex-row sm:flex-wrap justify-center items-center gap-2 sm:gap-3 w-full max-w-xs sm:max-w-none mx-auto"
           >
-            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
-              🎯 Daily Free tips
+            <span className="bg-slate-50 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap">
+              <Zap className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" /> Daily Free tips
             </span>
-            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
-              🚀 Instant updates
+            <span className="bg-slate-50 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap">
+              <Activity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" /> Instant updates
             </span>
-            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
-              🧠 AI powered
+            <span className="bg-slate-50 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap">
+              <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-500" /> AI powered
             </span>
-            <span className="bg-slate-50 px-4 py-2 rounded-full text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center gap-2 whitespace-nowrap">
-              📱 Low data usage
+            <span className="bg-slate-50 px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold text-slate-700 border border-slate-200 shadow-sm flex items-center justify-center gap-1.5 sm:gap-2 whitespace-nowrap">
+              <Smartphone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-slate-600" /> Low data usage
             </span>
           </motion.div>
         </div>

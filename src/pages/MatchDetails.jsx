@@ -20,6 +20,7 @@ import PredictedLineup from '../components/PredictedLineup';
 import TeamForm from '../components/TeamForm';
 import HeadToHead from '../components/HeadToHead';
 import MatchLineups from '../components/MatchLineups';
+import MatchEvents from '../components/MatchEvents';
 
 const StatBar = ({ label, home, away, type = 'percentage' }) => {
   const homeVal = parseFloat(home) || 0;
@@ -64,6 +65,10 @@ export default function MatchDetails() {
   
   const [match, setMatch] = useState(initialPrediction);
   const [eventDetails, setEventDetails] = useState(null);
+  const [eventDetailsV2, setEventDetailsV2] = useState(null);
+  const [eventMetadata, setEventMetadata] = useState(null);
+  const [eventIncidents, setEventIncidents] = useState(null);
+  const [loadingMetadata, setLoadingMetadata] = useState(true);
   const [playerStats, setPlayerStats] = useState([]);
   const [predictedLineup, setPredictedLineup] = useState(null);
   const [oddsCompare, setOddsCompare] = useState(null);
@@ -117,12 +122,52 @@ export default function MatchDetails() {
               if (fullEventData) {
                 setEventDetails(fullEventData);
                 
+                if (!data) {
+                  setMatch({ event: fullEventData });
+                }
+                
                 // If not started, fetch predicted lineup
                 if (fullEventData.status === 'notstarted' || fullEventData.status === 'NS') {
                   const lineupData = await getPredictedLineup(fullEventData.api_id).catch(() => null);
                   setPredictedLineup(lineupData);
                 }
               }
+
+              // Fetch V2 metadata, event details, odds, and lineups
+              import('../services/bsdApi').then(({ getEventDetailsV2, getEventMetadataV2, getEventLineupsV2, getEventOddsV2, getEventIncidentsV2 }) => {
+                getEventDetailsV2(eventId).then(data => data && setEventDetailsV2(data)).catch(() => null);
+                getEventMetadataV2(eventId)
+                  .then(data => {
+                    data && setEventMetadata(data);
+                    setLoadingMetadata(false);
+                  })
+                  .catch(() => setLoadingMetadata(false));
+                
+                getEventLineupsV2(eventId).then(data => {
+                  if (data && data.lineups) {
+                    setEventDetails(prev => prev ? { 
+                      ...prev, 
+                      lineups: data.lineups,
+                      unavailable_players: data.unavailable_players || prev.unavailable_players
+                    } : {
+                      lineups: data.lineups,
+                      unavailable_players: data.unavailable_players
+                    });
+                  }
+                }).catch(() => null);
+                
+                getEventOddsV2(eventId).then(data => {
+                  if (data && (data.odds || data.home_win)) {
+                    setOddsCompare(data.odds || data);
+                  }
+                }).catch(() => null);
+
+                getEventIncidentsV2(eventId).then(data => {
+                  if (data && data.incidents) {
+                    setEventIncidents(data.incidents);
+                  }
+                }).catch(() => null);
+              });
               
               const pStatsData = await getPlayerStats(eventId).catch(() => null);
               if (pStatsData?.results) {
@@ -131,9 +176,10 @@ export default function MatchDetails() {
               
               const oddsData = await getOddsCompare(eventId).catch(() => null);
               if (oddsData?.results) {
-                setOddsCompare(oddsData.results);
+                // Only set if we haven't already set v2 odds
+                setOddsCompare(prev => prev || oddsData.results);
               } else if (Array.isArray(oddsData)) {
-                setOddsCompare(oddsData);
+                setOddsCompare(prev => prev || oddsData);
               }
             } catch (e) {
               console.warn('Failed to fetch comprehensive event details:', e);
@@ -219,6 +265,8 @@ export default function MatchDetails() {
       setAnalyzing(false);
     }
   };
+
+  const [activeTab, setActiveTab] = useState('overview');
 
   const handleBack = (e) => {
     e.preventDefault();
@@ -333,44 +381,44 @@ export default function MatchDetails() {
           </span>
         </div>
 
-        <div className="p-8 md:p-12 flex items-center justify-between relative overflow-hidden">
+        <div className="p-6 md:p-12 flex items-center justify-between relative overflow-hidden">
           <div className="absolute inset-0 bg-gradient-to-b from-transparent to-slate-50/50 pointer-events-none"></div>
           
-          <div className="flex flex-col items-center gap-4 w-1/3 relative z-10">
+          <div className="flex flex-col items-center gap-2 md:gap-4 flex-1 relative z-10 px-2">
             <SmartLogo 
               urls={homeLogos} 
               alt={home_team?.name} 
               className="w-16 h-16 md:w-24 md:h-24 object-contain"
               fallbackText={home_team?.name || 'H'}
             />
-            <h2 className="text-xl md:text-2xl font-bold text-slate-900 text-center">{home_team?.name}</h2>
+            <h2 className="text-sm md:text-2xl font-bold text-slate-900 text-center">{home_team?.name}</h2>
           </div>
           
-          <div className="flex flex-col items-center justify-center w-1/3 relative z-10">
+          <div className="flex flex-col items-center justify-center shrink-0 min-w[80px] relative z-10 px-2 md:px-4">
             {status === 'NS' ? (
               <div className="text-2xl md:text-4xl font-black text-slate-400 uppercase tracking-widest">VS</div>
             ) : (
-              <div className="flex items-center gap-4 bg-slate-50 px-6 py-3 rounded-2xl border border-slate-200 shadow-inner">
-                <span className="text-4xl md:text-5xl font-black text-slate-900">{home_score}</span>
-                <span className="text-xl text-slate-400">-</span>
-                <span className="text-4xl md:text-5xl font-black text-slate-900">{away_score}</span>
+              <div className="flex items-center gap-2 md:gap-4 bg-slate-50 px-4 md:px-6 py-2 md:py-3 rounded-2xl border border-slate-200 shadow-inner">
+                <span className="text-3xl md:text-5xl font-black text-slate-900">{home_score}</span>
+                <span className="text-lg md:text-xl text-slate-400">-</span>
+                <span className="text-3xl md:text-5xl font-black text-slate-900">{away_score}</span>
               </div>
             )}
             {status === 'LIVE' && (
-              <span className="mt-4 px-3 py-1 bg-red-100 text-red-600 text-xs font-bold uppercase tracking-widest rounded-full animate-pulse border border-red-200">
+              <span className="mt-3 md:mt-4 px-3 py-1 bg-red-100 text-red-600 text-xs font-bold uppercase tracking-widest rounded-full animate-pulse border border-red-200">
                 Live Now
               </span>
             )}
           </div>
 
-          <div className="flex flex-col items-center gap-4 w-1/3 relative z-10">
+          <div className="flex flex-col items-center gap-2 md:gap-4 flex-1 relative z-10 px-2">
             <SmartLogo 
               urls={awayLogos} 
               alt={away_team?.name} 
               className="w-16 h-16 md:w-24 md:h-24 object-contain"
               fallbackText={away_team?.name || 'A'}
             />
-            <h2 className="text-xl md:text-2xl font-bold text-slate-900 text-center">{away_team?.name}</h2>
+            <h2 className="text-sm md:text-2xl font-bold text-slate-900 text-center">{away_team?.name}</h2>
           </div>
         </div>
 
@@ -412,9 +460,124 @@ export default function MatchDetails() {
             </div>
           </div>
         )}
+
+        {/* V2 Metadata Badges */}
+        {eventDetailsV2 && (eventDetailsV2.weather || eventDetailsV2.is_local_derby || eventDetailsV2.is_neutral_ground || eventDetailsV2.travel_distance_km > 0 || eventDetailsV2.attendance > 0) && (
+          <div className="bg-white border-t border-slate-100 p-4 flex flex-wrap gap-2 items-center justify-center text-xs font-medium text-slate-600">
+            {eventDetailsV2.is_local_derby && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-50 text-rose-700 rounded-full border border-rose-100 shadow-sm">
+                <Shield className="w-3.5 h-3.5" /> Local Derby
+              </span>
+            )}
+            {eventDetailsV2.is_neutral_ground && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-700 rounded-full border border-slate-200 shadow-sm">
+                <Flag className="w-3.5 h-3.5" /> Neutral Ground
+              </span>
+            )}
+            {eventDetailsV2.travel_distance_km > 0 && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 text-blue-700 rounded-full border border-blue-100 shadow-sm">
+                Travel: {eventDetailsV2.travel_distance_km}km
+              </span>
+            )}
+            {eventDetailsV2.weather?.description && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-sky-50 text-sky-700 rounded-full border border-sky-100 shadow-sm">
+                <span className="capitalize">{eventDetailsV2.weather.description}</span>
+                {eventDetailsV2.weather.temperature_c !== null && ` (${eventDetailsV2.weather.temperature_c}°C)`}
+              </span>
+            )}
+            {eventDetailsV2.attendance > 0 && (
+              <span className="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 text-emerald-700 rounded-full border border-emerald-100 shadow-sm">
+                <Users className="w-3.5 h-3.5" /> {eventDetailsV2.attendance.toLocaleString()}
+              </span>
+            )}
+          </div>
+        )}
       </div>
 
       <AdPlacement position="in-article" />
+
+      {/* Tabs */}
+      <div className="flex overflow-x-auto gap-4 sm:gap-8 mb-6 pb-4 border-b border-slate-100 scrollbar-none font-bold">
+        <button 
+          onClick={() => setActiveTab('overview')}
+          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'overview' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+        >
+          Facts
+        </button>
+        <button 
+          onClick={() => setActiveTab('lineups')}
+          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'lineups' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+        >
+          Lineups
+        </button>
+        <button 
+          onClick={() => setActiveTab('form')}
+          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'form' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+        >
+          H2H
+        </button>
+        <button 
+          onClick={() => setActiveTab('odds')}
+          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'odds' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+        >
+          Odds
+        </button>
+        <button 
+          onClick={() => setActiveTab('stats')}
+          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'stats' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+        >
+          Stats
+        </button>
+      </div>
+
+      {activeTab === 'overview' && (
+      <>
+      {/* Match Events */}
+      <MatchEvents incidents={eventIncidents} />
+
+      {/* AI Preview */}
+      {loadingMetadata ? (
+        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 shadow-sm animate-pulse">
+          <div className="flex items-center gap-2 mb-4 text-blue-800">
+            <Sparkles className="w-5 h-5 opacity-50" />
+            <div className="h-5 bg-blue-200/50 rounded w-32"></div>
+          </div>
+          <div className="space-y-3">
+            <div className="h-4 bg-blue-200/50 rounded w-full"></div>
+            <div className="h-4 bg-blue-200/50 rounded w-[90%]"></div>
+            <div className="h-4 bg-blue-200/50 rounded w-[95%]"></div>
+            <div className="h-4 bg-blue-200/50 rounded w-[80%]"></div>
+          </div>
+        </div>
+      ) : eventMetadata?.ai_preview ? (
+        <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4 text-blue-800">
+            <Sparkles className="w-5 h-5" />
+            <h3 className="font-bold">Match Preview</h3>
+          </div>
+          <div className="prose prose-sm prose-blue max-w-none text-slate-700">
+            <ReactMarkdown>{eventMetadata.ai_preview.text || eventMetadata.ai_preview}</ReactMarkdown>
+          </div>
+        </div>
+      ) : null}
+
+      {/* Pre-match Fun Facts */}
+      {eventMetadata?.funfacts && eventMetadata.funfacts.length > 0 && (
+        <div className="mb-8 bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4 text-slate-800">
+            <Info className="w-5 h-5 text-amber-500" />
+            <h3 className="font-bold">Pre-match Facts</h3>
+          </div>
+          <ul className="space-y-3">
+            {eventMetadata.funfacts.map((fact, idx) => (
+              <li key={idx} className="flex gap-3 text-sm text-slate-600">
+                <div className="min-w-1.5 mt-2 h-1.5 rounded-full bg-amber-400"></div>
+                <p>{fact.sentence || fact}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {prediction && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -591,7 +754,7 @@ export default function MatchDetails() {
             </div>
 
             {/* Match Stats */}
-            {(match.stats || eventDetails?.statistics) && (
+            {(match.stats || eventDetails?.statistics || eventDetails?.live_stats) && (
               <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mt-8">
                 <div className="flex items-center gap-3 mb-6">
                   <div className="bg-slate-900 p-2 rounded-lg">
@@ -602,31 +765,31 @@ export default function MatchDetails() {
                 <div className="space-y-6">
                   <StatBar 
                     label="Possession" 
-                    home={match.stats?.possession?.home || eventDetails?.statistics?.possession?.home || 0} 
-                    away={match.stats?.possession?.away || eventDetails?.statistics?.possession?.away || 0} 
+                    home={match.stats?.possession?.home || eventDetails?.statistics?.possession?.home || eventDetails?.live_stats?.home?.ball_possession || 0} 
+                    away={match.stats?.possession?.away || eventDetails?.statistics?.possession?.away || eventDetails?.live_stats?.away?.ball_possession || 0} 
                   />
                   <StatBar 
                     label="Shots on Target" 
-                    home={match.stats?.shots_on_target?.home || eventDetails?.statistics?.shots_on_target?.home || 0} 
-                    away={match.stats?.shots_on_target?.away || eventDetails?.statistics?.shots_on_target?.away || 0} 
+                    home={match.stats?.shots_on_target?.home || eventDetails?.statistics?.shots_on_target?.home || eventDetails?.live_stats?.home?.shots_on_target || 0} 
+                    away={match.stats?.shots_on_target?.away || eventDetails?.statistics?.shots_on_target?.away || eventDetails?.live_stats?.away?.shots_on_target || 0} 
                     type="count"
                   />
                   <StatBar 
                     label="Total Shots" 
-                    home={match.stats?.total_shots?.home || eventDetails?.statistics?.total_shots?.home || 0} 
-                    away={match.stats?.total_shots?.away || eventDetails?.statistics?.total_shots?.away || 0} 
+                    home={match.stats?.total_shots?.home || eventDetails?.statistics?.total_shots?.home || eventDetails?.live_stats?.home?.total_shots || 0} 
+                    away={match.stats?.total_shots?.away || eventDetails?.statistics?.total_shots?.away || eventDetails?.live_stats?.away?.total_shots || 0} 
                     type="count"
                   />
                   <StatBar 
                     label="Corners" 
-                    home={match.stats?.corners?.home || eventDetails?.statistics?.corners?.home || 0} 
-                    away={match.stats?.corners?.away || eventDetails?.statistics?.corners?.away || 0} 
+                    home={match.stats?.corners?.home || eventDetails?.statistics?.corners?.home || eventDetails?.live_stats?.home?.corner_kicks || 0} 
+                    away={match.stats?.corners?.away || eventDetails?.statistics?.corners?.away || eventDetails?.live_stats?.away?.corner_kicks || 0} 
                     type="count"
                   />
                   <StatBar 
                     label="Fouls" 
-                    home={match.stats?.fouls?.home || eventDetails?.statistics?.fouls?.home || 0} 
-                    away={match.stats?.fouls?.away || eventDetails?.statistics?.fouls?.away || 0} 
+                    home={match.stats?.fouls?.home || eventDetails?.statistics?.fouls?.home || eventDetails?.live_stats?.home?.fouls || 0} 
+                    away={match.stats?.fouls?.away || eventDetails?.statistics?.fouls?.away || eventDetails?.live_stats?.away?.fouls || 0} 
                     type="count"
                   />
                 </div>
@@ -694,38 +857,123 @@ export default function MatchDetails() {
         </div>
       )}
 
+      </>
+      )}
+
       {/* New Sections */}
       <div className="mt-8 space-y-8">
-        {eventDetails?.home_form || eventDetails?.away_form ? (
-          <TeamForm 
-            homeTeam={home_team?.name} 
-            awayTeam={away_team?.name} 
-            homeForm={eventDetails.home_form} 
-            awayForm={eventDetails.away_form} 
-          />
-        ) : null}
+        
+        {activeTab === 'form' && (
+          <>
+            {eventDetails?.home_form || eventDetails?.away_form ? (
+              <TeamForm 
+                homeTeam={home_team?.name} 
+                awayTeam={away_team?.name} 
+                homeForm={eventDetails.home_form} 
+                awayForm={eventDetails.away_form} 
+              />
+            ) : null}
 
-        {eventDetails?.head_to_head ? (
-          <HeadToHead 
-            h2h={eventDetails.head_to_head} 
-            homeTeam={home_team?.name} 
-            awayTeam={away_team?.name} 
-          />
-        ) : null}
-
-        {eventDetails?.lineups ? (
-          <MatchLineups 
-            lineups={eventDetails.lineups} 
-            homeTeam={home_team?.name} 
-            awayTeam={away_team?.name} 
-          />
-        ) : (
-          <PredictedLineup lineup={predictedLineup} />
+            {eventDetails?.head_to_head ? (
+              <HeadToHead 
+                h2h={eventDetails.head_to_head} 
+                homeTeam={home_team?.name} 
+                awayTeam={away_team?.name} 
+              />
+            ) : null}
+          </>
         )}
 
-        <MatchSpatialData event={eventDetails} />
-        <PlayerStatsTable stats={playerStats} />
-        <OddsComparison odds={oddsCompare} />
+        {activeTab === 'lineups' && (
+          <>
+            {/* Head Coaches Section */}
+            {(eventDetails?.home_coach || eventDetails?.away_coach) && (
+              <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm mb-6">
+                <h3 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-6">
+                  Head Coaches
+                </h3>
+                <div className="flex flex-col md:flex-row items-center justify-around gap-8">
+                  {eventDetails?.home_coach && (
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-md mb-3">
+                        <img 
+                          src={getImageUrl('coach', eventDetails.home_coach.id || eventDetails.home_coach.coach_id)} 
+                          alt={eventDetails.home_coach.name || eventDetails.home_coach}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(eventDetails.home_coach.name || eventDetails.home_coach) + '&background=e2e8f0&color=64748b&bold=true';
+                          }}
+                        />
+                      </div>
+                      <span className="font-bold text-slate-900 text-lg mb-2">
+                        {eventDetails.home_coach.name || eventDetails.home_coach}
+                      </span>
+                      {eventDetails.lineups?.home?.formation && (
+                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-sm font-bold">
+                          {eventDetails.lineups.home.formation}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {eventDetails?.home_coach && eventDetails?.away_coach && (
+                    <div className="hidden md:block w-px h-24 bg-slate-100"></div>
+                  )}
+
+                  {eventDetails?.away_coach && (
+                    <div className="flex flex-col items-center">
+                      <div className="w-16 h-16 rounded-full overflow-hidden bg-slate-100 border-2 border-white shadow-md mb-3">
+                        <img 
+                          src={getImageUrl('coach', eventDetails.away_coach.id || eventDetails.away_coach.coach_id)} 
+                          alt={eventDetails.away_coach.name || eventDetails.away_coach}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(eventDetails.away_coach.name || eventDetails.away_coach) + '&background=e2e8f0&color=64748b&bold=true';
+                          }}
+                        />
+                      </div>
+                      <span className="font-bold text-slate-900 text-lg mb-2">
+                        {eventDetails.away_coach.name || eventDetails.away_coach}
+                      </span>
+                      {eventDetails.lineups?.away?.formation && (
+                        <span className="bg-blue-50 text-blue-600 px-3 py-1 rounded-lg text-sm font-bold">
+                          {eventDetails.lineups.away.formation}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {eventDetails?.lineups ? (
+              <MatchLineups 
+                lineups={eventDetails.lineups} 
+                homeTeam={home_team} 
+                awayTeam={away_team} 
+                unavailable={eventDetails.unavailable_players || eventDetailsV2?.unavailable_players}
+              />
+            ) : (
+              <PredictedLineup 
+                lineup={predictedLineup}
+                homeTeam={home_team}
+                awayTeam={away_team}
+                unavailable={eventDetails?.unavailable_players || eventDetailsV2?.unavailable_players}
+              />
+            )}
+            <PlayerStatsTable stats={playerStats} />
+          </>
+        )}
+
+        {activeTab === 'stats' && (
+          <MatchSpatialData event={eventDetails} />
+        )}
+
+        {activeTab === 'odds' && (
+          <OddsComparison odds={oddsCompare} />
+        )}
       </div>
 
     </div>

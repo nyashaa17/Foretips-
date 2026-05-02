@@ -27,7 +27,9 @@ export default function Sidebar({ user, isAdmin, handleSignOut }) {
           <div className="bg-green-500 p-2 rounded-xl shadow-sm">
             <Trophy className="w-6 h-6 text-white" />
           </div>
-          <span className="text-[#0F172A] font-black text-xl tracking-tighter uppercase">Foretips</span>
+          <span className="text-[#0F172A] font-black text-xl tracking-tighter uppercase">
+            Fore<span className="text-green-500">tips</span>
+          </span>
         </Link>
       </div>
 

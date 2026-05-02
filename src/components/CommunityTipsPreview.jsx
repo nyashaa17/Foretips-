@@ -55,7 +55,7 @@ export default function CommunityTipsPreview() {
             <Users className="w-6 h-6 text-white" />
           </div>
           <h2 className="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">
-            Community Tips
+            Expert Tips
           </h2>
         </div>
         <Link 
@@ -189,8 +189,8 @@ export default function CommunityTipsPreview() {
       ) : (
         <div className="text-center py-16 bg-slate-50 rounded-3xl border border-slate-200 border-dashed">
           <Users className="w-12 h-12 text-slate-300 mx-auto mb-4" />
-          <h3 className="text-lg font-bold text-slate-900 mb-2">No community tips yet</h3>
-          <p className="text-slate-500 mb-6 max-w-md mx-auto">Be the first to share your football knowledge and predictions with the community.</p>
+          <h3 className="text-lg font-bold text-slate-900 mb-2">No expert tips yet</h3>
+          <p className="text-slate-500 mb-6 max-w-md mx-auto">Be the first to share your expert football knowledge and predictions.</p>
           <Link 
             to="/submit-tip" 
             className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-blue-600/20"

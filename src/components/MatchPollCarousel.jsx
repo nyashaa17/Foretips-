@@ -381,7 +381,7 @@ export default function MatchPollCarousel() {
                   prev();
                 }
               }}
-              className="bg-white p-4 sm:p-8 rounded-[2rem] shadow-xl text-slate-900 border border-slate-200 relative overflow-hidden aspect-square flex flex-col justify-between cursor-grab active:cursor-grabbing"
+              className="bg-white p-6 sm:p-8 rounded-[2rem] shadow-xl text-slate-900 border border-slate-200 relative overflow-hidden min-h-[420px] flex flex-col justify-between cursor-grab active:cursor-grabbing"
             >
               
               {/* Header: Date, Time and League */}

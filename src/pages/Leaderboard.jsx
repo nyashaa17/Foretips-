@@ -72,7 +72,7 @@ export default function Leaderboard() {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-12 md:py-16">
-      <SEO title="Leaderboard" description="See the top community tipsters" />
+      <SEO title="Leaderboard" description="See the top expert tipsters" />
       
       <div className="text-center mb-12">
         <h1 className="text-3xl md:text-4xl font-black text-slate-900 mb-4 uppercase tracking-tight">Top Tipsters</h1>

@@ -334,6 +334,26 @@ export const getEventDetails = async (id: number | string): Promise<Match | null
   return fetchBsdApi(`/api/events/${id}/`);
 };
 
+export const getEventDetailsV2 = async (id: number | string): Promise<any> => {
+  return fetchBsdApi(`/api/v2/events/${id}/`);
+};
+
+export const getEventMetadataV2 = async (id: number | string): Promise<any> => {
+  return fetchBsdApi(`/api/v2/events/${id}/metadata/`);
+};
+
+export const getEventLineupsV2 = async (id: number | string): Promise<any> => {
+  return fetchBsdApi(`/api/v2/events/${id}/lineups/`);
+};
+
+export const getEventOddsV2 = async (id: number | string): Promise<any> => {
+  return fetchBsdApi(`/api/v2/events/${id}/odds/`);
+};
+
+export const getEventIncidentsV2 = async (id: number | string): Promise<any> => {
+  return fetchBsdApi(`/api/v2/events/${id}/incidents/`);
+};
+
 const enrichWithPregameOdds = async (items: any[]) => {
   if (!supabase || !items || !items.length) return items;
   try {

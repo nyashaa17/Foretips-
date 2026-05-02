@@ -15,7 +15,9 @@ export default function Footer() {
               <div className="bg-green-500 p-1.5 rounded-xl group-hover:bg-green-600 transition-colors">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
-              <span className="text-slate-900 font-bold text-2xl tracking-tight">Foretips</span>
+              <span className="text-slate-900 font-bold text-2xl tracking-tight">
+                Fore<span className="text-green-500">tips</span>
+              </span>
             </Link>
             <p className="text-slate-500 text-sm leading-relaxed">
               Leading the way in data-driven football analysis. Our machine learning models process thousands of data points to bring you the most accurate match predictions and insights.

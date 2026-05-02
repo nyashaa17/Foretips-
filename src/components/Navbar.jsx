@@ -68,7 +68,9 @@ export default function Navbar() {
               <div className="bg-green-500 p-2 rounded-xl shadow-sm group-hover:scale-105 transition-transform">
                 <Trophy className="w-6 h-6 text-white" />
               </div>
-              <span className="text-[#0F172A] font-black text-2xl tracking-tighter uppercase">Foretips</span>
+              <span className="text-[#0F172A] font-black text-2xl tracking-tighter uppercase">
+                Fore<span className="text-green-500">tips</span>
+              </span>
             </Link>
           </div>
           
@@ -125,7 +127,9 @@ export default function Navbar() {
                     <div className="bg-green-500 p-1.5 rounded-lg shadow-sm">
                       <Trophy className="w-5 h-5 text-white" />
                     </div>
-                    <span className="text-[#0F172A] font-black text-xl tracking-tighter uppercase">Foretips</span>
+                    <span className="text-[#0F172A] font-black text-xl tracking-tighter uppercase">
+                      Fore<span className="text-green-500">tips</span>
+                    </span>
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">

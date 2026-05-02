@@ -267,7 +267,7 @@ export default function AdminDashboard() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 md:py-16">
-      <SEO title="Admin Dashboard" description="Manage community tips and blog content" />
+      <SEO title="Admin Dashboard" description="Manage expert tips and blog content" />
       
       <div className="flex flex-col gap-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

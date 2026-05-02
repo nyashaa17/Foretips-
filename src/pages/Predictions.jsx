@@ -152,8 +152,9 @@ export default function Predictions() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <SEO 
-        title="Expert Football Predictions & Betting Tips | Match Analysis" 
-        description="Get accurate football predictions, expert betting tips, and deep match analysis. Boost your betting strategy with our data-driven insights."
+        title="Football Predictions & Tips Today | Foretips" 
+        description="Get the latest AI-powered football predictions, betting tips, and live scores for today's matches on Foretips."
+        keywords="football predictions, betting tips, soccer predictions, match analysis, live scores"
       />
       
       <Breadcrumbs />

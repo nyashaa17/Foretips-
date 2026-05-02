@@ -44,7 +44,7 @@ export default function LiveMatchCard({ match }) {
 
   return (
     <Link 
-      to={`/match/${matchSlug}`}
+      to={`/event/${matchSlug}`}
       className="block bg-white rounded-xl border border-red-200 overflow-hidden hover:border-red-400 transition-colors relative shadow-sm"
     >
       <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 to-orange-500"></div>
@@ -142,21 +142,21 @@ export default function LiveMatchCard({ match }) {
         )}
 
         {/* Live xG */}
-        {(home_xg_live !== undefined && away_xg_live !== undefined) && (
+        {(home_xg_live != null && away_xg_live != null) && (
           <div className="mt-3 pt-3 border-t border-slate-100">
             <div className="flex items-center justify-between text-xs mb-1">
-              <span className="text-slate-600 font-medium">{home_xg_live.toFixed(2)}</span>
+              <span className="text-slate-600 font-medium">{Number(home_xg_live).toFixed(2)}</span>
               <span className="text-slate-400 uppercase tracking-wider text-[10px] font-bold">Live xG</span>
-              <span className="text-slate-600 font-medium">{away_xg_live.toFixed(2)}</span>
+              <span className="text-slate-600 font-medium">{Number(away_xg_live).toFixed(2)}</span>
             </div>
             <div className="flex h-1 rounded-full overflow-hidden bg-slate-100 border border-slate-200">
               <div 
                 className="bg-green-400 h-full transition-all duration-500" 
-                style={{ width: `${(home_xg_live / (home_xg_live + away_xg_live || 1)) * 100}%` }}
+                style={{ width: `${(Number(home_xg_live) / (Number(home_xg_live) + Number(away_xg_live) || 1)) * 100}%` }}
               ></div>
               <div 
                 className="bg-blue-400 h-full transition-all duration-500" 
-                style={{ width: `${(away_xg_live / (home_xg_live + away_xg_live || 1)) * 100}%` }}
+                style={{ width: `${(Number(away_xg_live) / (Number(home_xg_live) + Number(away_xg_live) || 1)) * 100}%` }}
               ></div>
             </div>
           </div>

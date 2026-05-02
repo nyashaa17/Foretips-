@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { getLiveMatches } from '../services/bsdApi';
+import { getLiveMatches, formatMinute } from '../services/bsdApi';
 import LiveMatchCard from '../components/LiveMatchCard';
 import { MatchSkeleton } from '../components/LoadingSkeleton';
-import { Activity, RefreshCw } from 'lucide-react';
+import { Activity, RefreshCw, Copy, Check } from 'lucide-react';
 import SEO from '../components/SEO';
 
 export default function LiveScores() {
@@ -10,6 +10,7 @@ export default function LiveScores() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [copied, setCopied] = useState(false);
 
   const fetchLive = async () => {
     try {
@@ -35,6 +36,53 @@ export default function LiveScores() {
     return () => clearInterval(interval);
   }, []);
 
+  const handleCopyForWhatsApp = () => {
+    if (!matches || matches.length === 0) return;
+
+    // Group matches by league
+    const groupedMatches = matches.reduce((acc, match) => {
+      const leagueName = typeof match.league === 'string' 
+        ? match.league 
+        : match.league?.name || match.league_name || 'Unknown League';
+      if (!acc[leagueName]) {
+        acc[leagueName] = [];
+      }
+      acc[leagueName].push(match);
+      return acc;
+    }, {});
+
+    let text = `⚽ *FORETIPS MATCH LIVE UPDATE* 🏟️\n`;
+    text += `━━━━━━━━━━━━━━━━━\n\n`;
+
+    Object.keys(groupedMatches).forEach((leagueName) => {
+      text += `🏆 *${leagueName.toUpperCase()}*\n`;
+      groupedMatches[leagueName].forEach((match) => {
+        const rawHome = match.home_team_obj || match.home_team;
+        const homeName = typeof rawHome === 'string' ? rawHome : rawHome?.name || 'Home Team';
+        
+        const rawAway = match.away_team_obj || match.away_team;
+        const awayName = typeof rawAway === 'string' ? rawAway : rawAway?.name || 'Away Team';
+        
+        const homeScore = match.home_score ?? 0;
+        const awayScore = match.away_score ?? 0;
+        const time = formatMinute(match.current_minute, match.period);
+        
+        text += `🔹 ${homeName} *${homeScore} - ${awayScore}* ${awayName} _(${time})_\n`;
+      });
+      text += `\n`;
+    });
+
+    text += `━━━━━━━━━━━━━━━━━\n`;
+    text += `👉 *Get more at:* https://foretips.co.zw/live 🚀`;
+
+    navigator.clipboard.writeText(text).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }).catch(err => {
+      console.error('Failed to copy', err);
+    });
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <SEO 
@@ -47,20 +95,35 @@ export default function LiveScores() {
             <div className="bg-red-100 p-2 rounded-lg">
               <Activity className="w-6 h-6 text-red-600 animate-pulse" />
             </div>
-          <h1 className="text-3xl font-bold text-slate-900">Live Scores</h1>
+            <h1 className="text-3xl font-bold text-slate-900">Live Scores</h1>
           </div>
           <p className="text-slate-500">Real-time match updates, stats, and incidents.</p>
         </div>
 
-        <div className="flex items-center gap-4 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
-          <div className="flex items-center gap-2 text-sm text-slate-500">
-            <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-green-600' : ''}`} />
-            <span>Auto-updates every 30s</span>
+        <div className="flex flex-wrap items-center gap-4">
+          <button
+            onClick={handleCopyForWhatsApp}
+            disabled={matches.length === 0}
+            className={`flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-bold transition-colors ${
+              copied 
+                ? 'bg-green-50 text-green-700 border-green-200' 
+                : 'bg-[#25D366] text-white hover:bg-[#1DA851] border-transparent shadow-sm'
+            } disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+            <span>{copied ? 'Copied!' : 'Copy for WhatsApp'}</span>
+          </button>
+
+          <div className="flex items-center gap-4 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin text-green-600' : ''}`} />
+              <span>Auto-updates every 30s</span>
+            </div>
+            <div className="h-4 w-px bg-slate-200"></div>
+            <span className="text-xs text-slate-400">
+              Last updated: {lastUpdated.toLocaleTimeString()}
+            </span>
           </div>
-          <div className="h-4 w-px bg-slate-200"></div>
-          <span className="text-xs text-slate-400">
-            Last updated: {lastUpdated.toLocaleTimeString()}
-          </span>
         </div>
       </div>
 
