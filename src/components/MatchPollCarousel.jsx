@@ -391,7 +391,7 @@ export default function MatchPollCarousel() {
                   <span className="w-1 h-1 rounded-full bg-slate-300"></span>
                   <span>{match?.event?.event_date ? new Date(match.event.event_date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '21:45'}</span>
                 </div>
-                <span className="truncate ml-2">{match?.event?.league?.name || 'Serie A'}</span>
+                <span className="truncate ml-2">{match?.event?.league?.name || 'Unknown League'}</span>
               </div>
 
               {/* Matchup: Logos, Names, and Score */}

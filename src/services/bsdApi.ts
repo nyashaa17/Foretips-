@@ -418,7 +418,7 @@ export const getPredictions = async (params: Record<string, any> = {}): Promise<
 
 export const getPredictionByEventId = async (eventId: number | string): Promise<Prediction | null> => {
   const data = await fetchBsdApi(`/api/predictions/?event=${eventId}`);
-  const result = data?.results?.[0] || null;
+  const result = data?.results?.find(p => String(p.event?.id) === String(eventId) || String(p.event?.api_id) === String(eventId)) || null;
   if (!result) return null;
   const enriched = await enrichWithPregameOdds([result]);
   return normalizePrediction(enriched[0]);

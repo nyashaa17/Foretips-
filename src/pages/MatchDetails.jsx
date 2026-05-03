@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
-import { getEventDetails, getPredictionDetails, getPredictionByEventId, getPlayerStats, getPredictedLineup, getOddsCompare, getImageUrl } from '../services/bsdApi';
+import { getEventDetails, getPredictionDetails, getPredictionByEventId, getPlayerStats, getPredictedLineup, getOddsCompare, getImageUrl, formatMinute } from '../services/bsdApi';
 import { saveToHistory } from '../services/api';
 import { format } from 'date-fns';
 import { ChevronLeft, TrendingUp, Activity, Target, Shield, Sparkles, Trophy, Clock, Info, Flag, Users } from 'lucide-react';
@@ -312,7 +312,8 @@ export default function MatchDetails() {
     : (rawAway ? { ...rawAway, id: rawAway.id || rawAway.team_id, api_id: rawAway.api_id } : { name: 'Away Team' });
     
   const event_date = event.event_date || event.start_time;
-  const { status, home_score, away_score } = event;
+  const currentEvent = eventDetails || event;
+  const { status, home_score, away_score, current_minute, period } = currentEvent;
   const prediction = match.predictions?.[0] || match.prediction || (match.predicted_result ? match : null);
 
   const seoTitle = `Watch ${home_team?.name} vs ${away_team?.name} Free Stream - Live Score & Lineups`;
@@ -404,9 +405,10 @@ export default function MatchDetails() {
                 <span className="text-3xl md:text-5xl font-black text-slate-900">{away_score}</span>
               </div>
             )}
-            {status === 'LIVE' && (
-              <span className="mt-3 md:mt-4 px-3 py-1 bg-red-100 text-red-600 text-xs font-bold uppercase tracking-widest rounded-full animate-pulse border border-red-200">
-                Live Now
+            {['1st_half', '2nd_half', 'halftime', 'ET', 'HT', 'live', 'LIVE'].includes(status) && (
+              <span className="mt-3 md:mt-4 px-3 py-1 bg-red-100 text-red-600 text-xs flex items-center gap-1.5 font-bold uppercase tracking-widest rounded-full animate-pulse border border-red-200">
+                <Activity className="w-3.5 h-3.5" />
+                {formatMinute(current_minute, period) || 'LIVE'}
               </span>
             )}
           </div>
@@ -504,24 +506,28 @@ export default function MatchDetails() {
         >
           Facts
         </button>
-        <button 
-          onClick={() => setActiveTab('lineups')}
-          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'lineups' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
-        >
-          Lineups
-        </button>
-        <button 
-          onClick={() => setActiveTab('form')}
-          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'form' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
-        >
-          H2H
-        </button>
-        <button 
-          onClick={() => setActiveTab('odds')}
-          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'odds' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
-        >
-          Odds
-        </button>
+        {!(eventDetails?.status && ['1st_half', '2nd_half', 'halftime', 'ET', 'HT', 'live'].includes(eventDetails.status)) && (
+          <>
+            <button 
+              onClick={() => setActiveTab('lineups')}
+              className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'lineups' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+            >
+              Lineups
+            </button>
+            <button 
+              onClick={() => setActiveTab('form')}
+              className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'form' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+            >
+              H2H
+            </button>
+            <button 
+              onClick={() => setActiveTab('odds')}
+              className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'odds' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+            >
+              Odds
+            </button>
+          </>
+        )}
         <button 
           onClick={() => setActiveTab('stats')}
           className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'stats' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
