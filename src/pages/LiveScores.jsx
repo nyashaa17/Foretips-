@@ -51,8 +51,8 @@ export default function LiveScores() {
       return acc;
     }, {});
 
-    let text = `⚽ *FORETIPS MATCH LIVE UPDATE* 🏟️\n`;
-    text += `━━━━━━━━━━━━━━━━━\n\n`;
+    let text = `🔴 *LIVE MATCH UPDATES | FORETIPS* ⚡\n`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n\n`;
 
     Object.keys(groupedMatches).forEach((leagueName) => {
       text += `🏆 *${leagueName.toUpperCase()}*\n`;
@@ -67,13 +67,20 @@ export default function LiveScores() {
         const awayScore = match.away_score ?? 0;
         const time = formatMinute(match.current_minute, match.period);
         
-        text += `🔹 ${homeName} *${homeScore} - ${awayScore}* ${awayName} _(${time})_\n`;
+        let statusEmoji = '⏱️';
+        if (match.status === 'halftime' || match.status === 'HT') statusEmoji = '⏸️';
+        else if (match.status === 'finished' || match.status === 'FT') statusEmoji = '🏁';
+        else if (match.status === 'NS') statusEmoji = '⏳';
+        else statusEmoji = '🔥';
+        
+        text += `${statusEmoji} ${homeName}  *${homeScore} - ${awayScore}*  ${awayName} _(${time})_\n`;
       });
       text += `\n`;
     });
 
-    text += `━━━━━━━━━━━━━━━━━\n`;
-    text += `👉 *Get more at:* https://foretips.co.zw/live 🚀`;
+    text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+    text += `🌐 *Track Live:* https://foretips.co.zw/live\n`;
+    text += `🎯 *Free tips:* https://whatsapp.com/channel/0029Vb7MXnXKLaHohHn7do3q`;
 
     navigator.clipboard.writeText(text).then(() => {
       setCopied(true);
