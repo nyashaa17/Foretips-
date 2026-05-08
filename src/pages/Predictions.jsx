@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { getPredictions } from '../services/bsdApi';
 import { getLeagues, getMemoryCache, getPredictionsCacheKey } from '../services/api';
 import PredictionCard from '../components/PredictionCard';
-import { AdPlacement } from '../components/AdPlacement';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import { ChevronRight, Zap, TrendingUp, CalendarDays, Search, ChevronDown } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -12,7 +11,7 @@ import clsx from 'clsx';
 import React from 'react';
 import FilterSelector from '../components/FilterSelector';
 
-export default function Predictions() {
+export default function Predictions({ defaultDate = 'today' }) {
   const navigate = useNavigate();
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -23,8 +22,14 @@ export default function Predictions() {
   const [showFilterSelector, setShowFilterSelector] = useState(false);
   const [showLeagueSelector, setShowLeagueSelector] = useState(false);
   const [selectedLeague, setSelectedLeague] = useState(null);
-  const [dateFilter, setDateFilter] = useState('today'); // 'yesterday', 'today', 'tomorrow', 'custom'
+  const [dateFilter, setDateFilter] = useState(defaultDate); // 'yesterday', 'today', 'tomorrow', 'custom'
   const [searchQuery, setSearchQuery] = useState(''); // Search by team name
+  
+  useEffect(() => {
+    if (defaultDate !== 'custom') {
+      setDateFilter(defaultDate);
+    }
+  }, [defaultDate]);
   
   // Custom Date Range
   const [customDateFrom, setCustomDateFrom] = useState('');
@@ -149,12 +154,46 @@ export default function Predictions() {
     return result;
   }, [predictions, filterBy, searchQuery]);
 
+  const getTitle = () => {
+    switch (defaultDate) {
+      case 'today':
+        return 'Football Predictions For Today | Free Tips & Odds - Foretips';
+      case 'tomorrow':
+        return 'Football Predictions For Tomorrow | Free Tips & Odds - Foretips';
+      default:
+        return 'Football Predictions Today | Free Tips & Odds - Foretips';
+    }
+  };
+
+  const getDescription = () => {
+    switch (defaultDate) {
+      case 'today':
+        return 'Access highly accurate, data-driven football predictions and free betting tips for today\'s matches. Foretips provides AI-powered analysis and top odds for all major leagues.';
+      case 'tomorrow':
+        return 'Access highly accurate, data-driven football predictions and free betting tips for tomorrow\'s matches. Foretips provides AI-powered analysis and top odds for all major leagues.';
+      default:
+        return 'Get the most accurate, data-driven football predictions, free betting tips, and match analysis. Foretips offers AI-powered insights and top odds for major football leagues.';
+    }
+  };
+
+  const getCanonicalUrl = () => {
+    switch (defaultDate) {
+      case 'today':
+        return 'https://foretips.co.zw/prediction';
+      case 'tomorrow':
+        return 'https://foretips.co.zw/prediction/tomorrow';
+      default:
+        return 'https://foretips.co.zw/prediction';
+    }
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <SEO 
-        title="Football Predictions & Tips Today | Foretips" 
-        description="Get the latest AI-powered football predictions, betting tips, and live scores for today's matches on Foretips."
-        keywords="football predictions, betting tips, soccer predictions, match analysis, live scores"
+        title={getTitle()} 
+        description={getDescription()}
+        keywords="football predictions, free betting tips, today's predictions, match analysis, AI football tips, best odds"
+        canonicalUrl={getCanonicalUrl()}
       />
       
       <Breadcrumbs />
@@ -182,24 +221,18 @@ export default function Predictions() {
             </div>
             
             <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0">
-              <button 
-                onClick={() => setDateFilter('yesterday')}
-                className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap", dateFilter === 'yesterday' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
-              >
-                Yesterday
-              </button>
-              <button 
-                onClick={() => setDateFilter('today')}
+              <Link 
+                to="/predictions/today"
                 className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap", dateFilter === 'today' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
               >
                 Today
-              </button>
-              <button 
-                onClick={() => setDateFilter('tomorrow')}
+              </Link>
+              <Link 
+                to="/predictions/tomorrow"
                 className={clsx("px-4 py-2 rounded-lg text-sm font-bold transition-colors whitespace-nowrap", dateFilter === 'tomorrow' ? "bg-slate-900 text-white" : "bg-slate-100 text-slate-600 hover:bg-slate-200")}
               >
                 Tomorrow
-              </button>
+              </Link>
             </div>
           </div>
 
@@ -283,11 +316,6 @@ export default function Predictions() {
             processedPredictions.map((prediction, index) => (
               <React.Fragment key={`${prediction.id}-${index}`}>
                 <PredictionCard prediction={prediction} />
-                {(index + 1) % 3 === 0 && (
-                  <div className="col-span-full">
-                    <AdPlacement position="predictions_list" />
-                  </div>
-                )}
               </React.Fragment>
             ))
           ) : (

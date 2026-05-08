@@ -12,8 +12,6 @@ export default function Sidebar({ user, isAdmin, handleSignOut }) {
     { name: 'Live', path: '/live', icon: <Radio className="w-5 h-5 text-red-500" /> },
     { name: 'Leagues', path: '/leagues', icon: <Shield className="w-5 h-5" /> },
     { name: 'Blog', path: '/blog', icon: <Calendar className="w-5 h-5" /> },
-    { name: 'Submit Tip', path: '/submit-tip', icon: <PenTool className="w-5 h-5" /> },
-    { name: 'Leaderboard', path: '/leaderboard', icon: <Medal className="w-5 h-5" /> },
   ];
 
   if (isAdmin) {

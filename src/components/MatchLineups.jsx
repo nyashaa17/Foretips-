@@ -55,7 +55,7 @@ export default function MatchLineups({ lineups, homeTeam, awayTeam, unavailable 
             
             <div className="flex flex-col gap-1 pl-7">
               <div className="flex items-center gap-1.5 text-[13px] text-slate-500">
-                <span className="font-medium text-slate-700">{position.charAt(0)}</span>
+                <span className="font-medium text-slate-700">{position}</span>
                 {startsInfo ? (
                   <>
                     <span className="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -89,6 +89,22 @@ export default function MatchLineups({ lineups, homeTeam, awayTeam, unavailable 
     if (!teamData) return null;
     const starters = teamData.players || teamData.starters || [];
     const substitutes = teamData.substitutes || [];
+    
+    // Get unavailable players from props
+    let teamUnavailable = [];
+    if (unavailable) {
+      if (isHome && Array.isArray(unavailable.home)) teamUnavailable = unavailable.home;
+      if (!isHome && Array.isArray(unavailable.away)) teamUnavailable = unavailable.away;
+    }
+    
+    // Deduplicate by player_id
+    const seen = new Set();
+    teamUnavailable = teamUnavailable.filter(item => {
+      const id = item.player_id || item.id;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
     
     const playersToRender = activeSubTab === 'starters' ? starters : substitutes;
 
@@ -146,6 +162,38 @@ export default function MatchLineups({ lineups, homeTeam, awayTeam, unavailable 
             </div>
           )}
         </div>
+
+        {teamUnavailable && teamUnavailable.length > 0 && (
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+            <h4 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+               <AlertCircle className="w-4 h-4 text-rose-500" />
+               Unavailable Players
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {teamUnavailable.map((player, idx) => (
+                <div key={idx} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                   <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 shrink-0">
+                     <img 
+                       src={getImageUrl('player', player.player_id || player.id)} 
+                       alt={player.name} 
+                       className="w-full h-full object-cover"
+                       onError={(e) => {
+                         e.target.onerror = null;
+                         e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(player.name || 'P') + '&background=e2e8f0&color=64748b&bold=true';
+                       }}
+                     />
+                   </div>
+                   <div className="flex flex-col">
+                     <span className="font-bold text-sm text-slate-900">{player.name}</span>
+                     <span className="text-xs text-rose-600 font-medium capitalize">
+                       {player.status || player.reason || 'Unavailable'}
+                     </span>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };

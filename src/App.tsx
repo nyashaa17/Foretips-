@@ -7,6 +7,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Suspense, lazy } from 'react';
 import ScrollToTop from './components/ScrollToTop';
 import CookieConsent from './components/CookieConsent';
+import UpdateNotification from './components/UpdateNotification';
 import Layout from './components/Layout';
 const Home = lazy(() => import('./pages/Home'));
 const Predictions = lazy(() => import('./pages/Predictions'));
@@ -28,8 +29,8 @@ import SubmitTip from './pages/SubmitTip';
 import Leaderboard from './pages/Leaderboard';
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 import UserProfile from './pages/UserProfile';
+import Search from './pages/Search';
 import AdminRoute from './components/AdminRoute';
-import { AdManager } from './components/AdManager';
 import NotFound from './pages/NotFound';
 
 export default function App() {
@@ -41,9 +42,15 @@ export default function App() {
           <Routes>
             <Route element={<Layout />}>
               <Route path="/" element={<Home />} />
-              <Route path="/predictions" element={<Predictions />} />
+              <Route path="/predictions" element={<Predictions defaultDate="today" />} />
+              <Route path="/prediction" element={<Predictions defaultDate="today" />} />
+              <Route path="/predictions/today" element={<Predictions defaultDate="today" />} />
+              <Route path="/prediction/today" element={<Predictions defaultDate="today" />} />
+              <Route path="/predictions/tomorrow" element={<Predictions defaultDate="tomorrow" />} />
+              <Route path="/prediction/tomorrow" element={<Predictions defaultDate="tomorrow" />} />
               <Route path="/live" element={<LiveScores />} />
               <Route path="/leagues" element={<Leagues />} />
+              <Route path="/search" element={<Search />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/blog/:slug" element={<BlogPost />} />
               <Route path="/about" element={<About />} />
@@ -59,11 +66,6 @@ export default function App() {
               <Route path="/submit-tip" element={<SubmitTip />} />
               <Route path="/leaderboard" element={<Leaderboard />} />
               <Route path="/admin" element={<Navigate to="/dashboard" replace />} />
-              <Route path="/admin/ads" element={
-                <AdminRoute>
-                  <AdManager />
-                </AdminRoute>
-              } />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<UserProfile />} />
               <Route path="/:leagueSlug" element={<LeaguePredictions />} />
@@ -72,6 +74,7 @@ export default function App() {
           </Routes>
         </Suspense>
         <CookieConsent />
+        <UpdateNotification />
       </div>
     </Router>
   );

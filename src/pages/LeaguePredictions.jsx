@@ -57,7 +57,7 @@ export default function LeaguePredictions() {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <SEO 
-        title={leagueInfo ? `${leagueInfo.name} Predictions` : 'League Predictions'} 
+        title={leagueInfo ? `Football Predictions ${leagueInfo.name} | Free Tips & Odds - Foretips` : 'Football Predictions | Free Tips & Odds - Foretips'} 
         description={`Latest AI football predictions, betting tips, and analysis for ${leagueInfo ? leagueInfo.name : 'this league'}.`}
       />
       <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors">

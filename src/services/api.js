@@ -454,8 +454,12 @@ export const getLiveMatches = async () => {
   return result;
 };
 
-export const getLeagues = async () => {
-  let result = await fetchFromApi('/leagues/', 'leagues_list');
+export const getLeagues = async (params = {}) => {
+  const query = new URLSearchParams(params).toString();
+  const endpoint = `/leagues/${query ? `?${query}` : ''}`;
+  const cacheKey = `leagues_list${query ? `_${query}` : ''}`;
+
+  let result = await fetchFromApi(endpoint, cacheKey);
   let allResults = [];
   
   if (result && result.results) {
@@ -463,7 +467,7 @@ export const getLeagues = async () => {
     let nextUrl = result.next;
     
     let pageCount = 0;
-    while (nextUrl && pageCount < 20) {
+    while (nextUrl && pageCount < 5) { // reduced max pages from 20 to 5 to avoid long loops on search
       pageCount++;
       const nextQuery = nextUrl.includes('?') ? nextUrl.split('?')[1] : '';
       const nextEndpoint = `/leagues/${nextQuery ? `?${nextQuery}` : ''}`;

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
 import SEO from '../components/SEO';
-import { CheckCircle, XCircle, Clock, User, AlertCircle, TrendingUp, Trophy, Megaphone, LayoutDashboard, FileText, Star } from 'lucide-react';
+import { CheckCircle, XCircle, Clock, User, AlertCircle, TrendingUp, Trophy, LayoutDashboard, FileText, Star } from 'lucide-react';
 import ConfirmationModal from '../components/ConfirmationModal';
 import { Link } from 'react-router-dom';
 import BlogManager from '../components/BlogManager';
@@ -372,13 +372,6 @@ export default function AdminDashboard() {
                   <Trophy className="w-4 h-4 mr-2" />
                   Auto-Settle
                 </button>
-                <Link 
-                  to="/admin/ads"
-                  className="flex items-center px-4 py-2 rounded-lg text-sm font-bold transition-colors bg-blue-600 text-white hover:bg-blue-700"
-                >
-                  <Megaphone className="w-4 h-4 mr-2" />
-                  Manage Ads
-                </Link>
                 {isAdmin && (
                   <button 
                     onClick={resetLeaderboard}

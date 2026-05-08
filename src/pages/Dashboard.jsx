@@ -324,15 +324,9 @@ export default function Dashboard() {
           <h1 className="text-3xl font-black text-slate-900 mb-2">Welcome back, {profile?.username || user?.email.split('@')[0]}!</h1>
           <p className="text-slate-600">Track your prediction performance</p>
         </div>
-        <button 
-          onClick={() => navigate('/submit-tip')}
-          className="hidden md:block px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
-        >
-          Submit New Tip
-        </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
         <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
           <div className="bg-green-100 p-3 rounded-xl">
             <Activity className="w-6 h-6 text-green-600" />
@@ -351,16 +345,6 @@ export default function Dashboard() {
             <p className="text-sm font-bold text-slate-500 uppercase">Success Rate</p>
             <p className="text-2xl font-black text-slate-900">{successRate}%</p>
             <p className="text-xs text-slate-500">{stats.won} Won, {stats.lost} Lost</p>
-          </div>
-        </div>
-        
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
-          <div className="bg-yellow-100 p-3 rounded-xl">
-            <Trophy className="w-6 h-6 text-yellow-600" />
-          </div>
-          <div>
-            <p className="text-sm font-bold text-slate-500 uppercase">Leaderboard Rank</p>
-            <p className="text-2xl font-black text-slate-900">{stats.rank}</p>
           </div>
         </div>
       </div>
@@ -406,14 +390,8 @@ export default function Dashboard() {
         
         {tips.length === 0 ? (
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 text-center">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Ready to make your first prediction?</h2>
-            <p className="text-slate-600 mb-6">Head over to the Submit Tip page to share your football knowledge with the community.</p>
-            <button 
-              onClick={() => navigate('/submit-tip')}
-              className="px-6 py-3 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition-colors"
-            >
-              Submit a Tip
-            </button>
+            <h2 className="text-xl font-bold text-slate-900 mb-4">No tips submitted yet</h2>
+            <p className="text-slate-600 mb-6">Expert tips submission will be available soon.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -522,14 +500,6 @@ export default function Dashboard() {
         )}
       </div>
       
-      <div className="md:hidden mt-8">
-        <button 
-          onClick={() => navigate('/submit-tip')}
-          className="w-full px-6 py-4 bg-green-600 text-white font-bold rounded-xl hover:bg-green-700 transition-colors"
-        >
-          Submit New Tip
-        </button>
-      </div>
       <ConfirmationModal 
         isOpen={modal.isOpen}
         onClose={() => setModal({ ...modal, isOpen: false })}

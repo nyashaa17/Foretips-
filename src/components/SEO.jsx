@@ -1,11 +1,13 @@
 import { Helmet } from 'react-helmet-async';
 import { useLocation } from 'react-router-dom';
 
-export default function SEO({ title, description, keywords, image, type = 'website' }) {
+export default function SEO({ title, description, keywords, image, type = 'website', canonicalUrl }) {
   const location = useLocation();
   const siteName = 'Foretips';
-  const fullTitle = title ? `${title} | ${siteName}` : `${siteName} | AI-Powered Football Predictions & Match Analysis`;
-  const url = `https://foretips.co.zw${location.pathname}`;
+  const fullTitle = title 
+    ? (title.toLowerCase().includes(siteName.toLowerCase()) ? title : `${title} | ${siteName}`) 
+    : `${siteName} | AI-Powered Football Predictions & Match Analysis`;
+  const url = canonicalUrl || `https://foretips.co.zw${location.pathname}`;
 
   const defaultImage = 'https://qyebxlyciijxdwapvyiy.supabase.co/storage/v1/object/public/Assets/og.jpg';
   const finalImage = image || defaultImage;

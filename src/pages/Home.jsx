@@ -4,17 +4,14 @@ import { getPredictions, getMemoryCache, getPredictionsCacheKey } from '../servi
 import { filterYesterdayMatches, filterTodayMatches, filterTomorrowMatches } from '../utils/dateFilters';
 import PredictionCard from '../components/PredictionCard';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
-import CommunityTipsPreview from '../components/CommunityTipsPreview';
-import LeaderboardPreview from '../components/LeaderboardPreview';
 import FAQSection from '../components/FAQSection';
+import RecentSuccess from '../components/RecentSuccess';
 import { TrendingUp, Activity, ChevronRight, Star, Calendar, Trophy, MessageCircle, Zap, Users, Medal, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { hapticFeedback } from '../utils/haptics';
 import SEO from '../components/SEO';
 import clsx from 'clsx';
 import { MotionCard } from '../components/MotionCard';
-
-import { AdPlacement } from '../components/AdPlacement';
 
 const MatchPollCarousel = lazy(() => import('../components/MatchPollCarousel'));
 
@@ -199,6 +196,8 @@ export default function Home() {
         <MatchPollCarousel />
       </Suspense>
 
+      <RecentSuccess />
+
       {/* Predictions Section */}
       <section ref={predictionsRef}>
         {/* Header */}
@@ -250,10 +249,9 @@ export default function Home() {
               {loading ? (
                 Array.from({ length: 10 }).map((_, i) => <PredictionSkeleton key={i} />)
               ) : featuredPredictions.length > 0 ? (
-                featuredPredictions.map((prediction, index) => [
-                  <PredictionCard key={`${prediction.id}-${index}`} prediction={prediction} />,
-                  index === 0 && <AdPlacement key="ad-inline" position="header" className="col-span-full" />
-                ])
+                featuredPredictions.map((prediction, index) => (
+                  <PredictionCard key={`${prediction.id}-${index}`} prediction={prediction} />
+                ))
               ) : (
                 <div className="col-span-full py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
                   <Calendar className="w-12 h-12 text-slate-300 mx-auto mb-4" />
@@ -278,9 +276,6 @@ export default function Home() {
         )}
       </section>
 
-      <CommunityTipsPreview />
-      <LeaderboardPreview />
-      
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <FAQSection />
       </section>

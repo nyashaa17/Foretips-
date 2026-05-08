@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, Link, useLocation, useNavigate } from 'react-router-dom';
+import { useParams, Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { getEventDetails, getPredictionDetails, getPredictionByEventId, getPlayerStats, getPredictedLineup, getOddsCompare, getImageUrl, formatMinute } from '../services/bsdApi';
 import { saveToHistory } from '../services/api';
 import { format } from 'date-fns';
@@ -8,7 +8,6 @@ import SEO from '../components/SEO';
 import clsx from 'clsx';
 import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabaseClient';
-import { AdPlacement } from '../components/AdPlacement';
 import ReactMarkdown from 'react-markdown';
 import NotFound from './NotFound';
 
@@ -266,7 +265,8 @@ export default function MatchDetails() {
     }
   };
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'overview');
 
   const handleBack = (e) => {
     e.preventDefault();
@@ -496,8 +496,6 @@ export default function MatchDetails() {
         )}
       </div>
 
-      <AdPlacement position="in-article" />
-
       {/* Tabs */}
       <div className="flex overflow-x-auto gap-4 sm:gap-8 mb-6 pb-4 border-b border-slate-100 scrollbar-none font-bold">
         <button 
@@ -505,6 +503,12 @@ export default function MatchDetails() {
           className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'overview' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
         >
           Facts
+        </button>
+        <button 
+          onClick={() => setActiveTab('events')}
+          className={clsx("px-6 py-2.5 rounded-full whitespace-nowrap text-[15px] transition-all", activeTab === 'events' ? "bg-[#0F172A] text-white shadow-sm" : "bg-transparent text-slate-500 hover:text-slate-900 border-none px-2")}
+        >
+          Events
         </button>
         {!(eventDetails?.status && ['1st_half', '2nd_half', 'halftime', 'ET', 'HT', 'live'].includes(eventDetails.status)) && (
           <>
@@ -536,11 +540,12 @@ export default function MatchDetails() {
         </button>
       </div>
 
+      {activeTab === 'events' && (
+        <MatchEvents incidents={eventIncidents} />
+      )}
+
       {activeTab === 'overview' && (
       <>
-      {/* Match Events */}
-      <MatchEvents incidents={eventIncidents} />
-
       {/* AI Preview */}
       {loadingMetadata ? (
         <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-2xl border border-blue-100 p-6 shadow-sm animate-pulse">

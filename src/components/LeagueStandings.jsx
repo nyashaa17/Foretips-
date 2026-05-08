@@ -162,16 +162,16 @@ export default function LeagueStandings({ leagueName, countryName }) {
         <table className="w-full text-sm text-left">
           <thead className="bg-slate-50 text-slate-500 font-medium border-b border-slate-200">
             <tr>
-              <th className="px-4 py-3 text-center w-12">#</th>
+              <th className="px-4 py-3 text-center">Rank</th>
               <th className="px-4 py-3">Club</th>
-              <th className="px-4 py-3 text-center w-12" title="Played">MP</th>
-              <th className="px-4 py-3 text-center w-12" title="Won">W</th>
-              <th className="px-4 py-3 text-center w-12" title="Drawn">D</th>
-              <th className="px-4 py-3 text-center w-12" title="Lost">L</th>
-              <th className="px-4 py-3 text-center w-16 hidden sm:table-cell" title="Goals For">GF</th>
-              <th className="px-4 py-3 text-center w-16 hidden sm:table-cell" title="Goals Against">GA</th>
-              <th className="px-4 py-3 text-center w-16" title="Goal Difference">GD</th>
-              <th className="px-4 py-3 text-center w-16 font-bold">Pts</th>
+              <th className="px-4 py-3 text-center" title="Played">Played</th>
+              <th className="px-4 py-3 text-center" title="Won">Won</th>
+              <th className="px-4 py-3 text-center" title="Drawn">Drawn</th>
+              <th className="px-4 py-3 text-center" title="Lost">Lost</th>
+              <th className="px-4 py-3 text-center hidden sm:table-cell" title="Goals For">GF</th>
+              <th className="px-4 py-3 text-center hidden sm:table-cell" title="Goals Against">GA</th>
+              <th className="px-4 py-3 text-center" title="Goal Difference">GD</th>
+              <th className="px-4 py-3 text-center font-bold">Points</th>
               <th className="px-4 py-3 hidden md:table-cell">Form</th>
             </tr>
           </thead>

@@ -16,6 +16,7 @@ export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const [user, setUser] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -47,14 +48,21 @@ export default function Navbar() {
     navigate('/');
   };
 
+  const handleSearchSubmit = (e) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      navigate(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      setIsOpen(false);
+      setSearchQuery('');
+    }
+  };
+
   const allNavLinks = [
     { name: 'Home', path: '/', icon: <Home className="w-5 h-5" /> },
     { name: 'Predictions', path: '/predictions', icon: <TrendingUp className="w-5 h-5" /> },
     { name: 'Live', path: '/live', icon: <Radio className="w-5 h-5 text-red-500" /> },
     { name: 'Leagues', path: '/leagues', icon: <Shield className="w-5 h-5" /> },
     { name: 'Blog', path: '/blog', icon: <Calendar className="w-5 h-5" /> },
-    { name: 'Submit Tip', path: '/submit-tip', icon: <PenTool className="w-5 h-5" /> },
-    { name: 'Leaderboard', path: '/leaderboard', icon: <Medal className="w-5 h-5" /> },
   ];
 
   const navLinks = allNavLinks;
@@ -75,8 +83,20 @@ export default function Navbar() {
           </div>
           
           {/* Desktop Menu */}
-          <div className="hidden lg:block">
-            <div className="ml-10 flex items-center space-x-2">
+          <div className="hidden lg:flex flex-1 items-center justify-end">
+            <div className="ml-8 mr-4 flex-1 max-w-sm">
+              <form onSubmit={handleSearchSubmit} className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <input 
+                  type="text" 
+                  placeholder="Search matches or leagues..." 
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-500 focus:bg-white transition-colors"
+                />
+              </form>
+            </div>
+            <div className="flex items-center space-x-2">
               {navLinks.map((link) => (
                 <Link
                   key={link.name}
@@ -133,6 +153,18 @@ export default function Navbar() {
                   </SheetTitle>
                 </SheetHeader>
                 <div className="flex-1 overflow-y-auto py-4 px-3 space-y-1">
+                  <div className="mb-4 bg-slate-50 p-2 rounded-xl border border-slate-100">
+                    <form onSubmit={handleSearchSubmit} className="relative">
+                      <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input 
+                        type="text" 
+                        placeholder="Search matches or leagues..." 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-10 pr-4 py-3 bg-white border border-slate-200 rounded-lg text-base focus:outline-none focus:ring-2 focus:ring-green-500 transition-colors"
+                      />
+                    </form>
+                  </div>
                   {navLinks.map((link) => (
                     <Link
                       key={link.name}

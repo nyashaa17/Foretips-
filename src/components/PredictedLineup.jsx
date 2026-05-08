@@ -20,16 +20,45 @@ export default function PredictedLineup({ lineup, homeTeam, awayTeam, unavailabl
     ? (lineup.lineups?.away?.starters || []) 
     : (lineup.starters?.filter(p => !p.is_home) || []);
 
-  const localUnavailable = isNewStructure
-    ? [
-        ...(lineup.lineups?.home?.unavailable?.map(p => ({ ...p, is_home: true })) || []),
-        ...(lineup.lineups?.away?.unavailable?.map(p => ({ ...p, is_home: false })) || [])
-      ]
-    : (lineup.unavailable || []);
-    
-  const allUnavailable = [...localUnavailable];
-  if (unavailable?.home) allUnavailable.push(...unavailable.home);
-  if (unavailable?.away) allUnavailable.push(...unavailable.away);
+  const homeUnavailable = [];
+  const awayUnavailable = [];
+
+  if (isNewStructure) {
+    if (lineup.lineups?.home?.unavailable) {
+      homeUnavailable.push(...lineup.lineups.home.unavailable);
+    }
+    if (lineup.lineups?.away?.unavailable) {
+      awayUnavailable.push(...lineup.lineups.away.unavailable);
+    }
+  } else {
+    // old structure
+    if (lineup.unavailable) {
+      homeUnavailable.push(...lineup.unavailable.filter(p => p.is_home));
+      awayUnavailable.push(...lineup.unavailable.filter(p => !p.is_home));
+    }
+  }
+
+  if (unavailable?.home) {
+    homeUnavailable.push(...unavailable.home);
+  }
+  if (unavailable?.away) {
+    awayUnavailable.push(...unavailable.away);
+  }
+  
+  // Deduplicate by player_id
+  const getUnique = (arr) => {
+    const seen = new Set();
+    return arr.filter(item => {
+      const id = item.player_id || item.id;
+      if (seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    });
+  };
+
+  const uniqueHomeUnavailable = getUnique(homeUnavailable);
+  const uniqueAwayUnavailable = getUnique(awayUnavailable);
+  const allUnavailable = [...uniqueHomeUnavailable, ...uniqueAwayUnavailable];
 
   const confidence = isNewStructure 
     ? Math.round(((lineup.lineups?.home?.confidence || 0) + (lineup.lineups?.away?.confidence || 0)) / 2)
@@ -56,7 +85,7 @@ export default function PredictedLineup({ lineup, homeTeam, awayTeam, unavailabl
     return 'bg-slate-400'; // Gray
   };
 
-  const renderTeamPredictedLineup = (team, formation, teamStarters, conf) => {
+  const renderTeamPredictedLineup = (team, formation, teamStarters, conf, teamUnavailable) => {
     if (!teamStarters || teamStarters.length === 0) return null;
     return (
       <div className="bg-white rounded-[24px] border border-slate-100 shadow-sm mb-6 overflow-hidden">
@@ -135,7 +164,7 @@ export default function PredictedLineup({ lineup, homeTeam, awayTeam, unavailabl
                       )}
                     </div>
                     <div className="flex items-center gap-1.5 text-[13px] text-slate-500 pl-7">
-                      <span className="font-medium text-slate-700">{position.charAt(0)}</span>
+                      <span className="font-medium text-slate-700">{position}</span>
                       {startsInfo ? (
                         <>
                           <span className="w-1 h-1 rounded-full bg-slate-300"></span>
@@ -155,14 +184,46 @@ export default function PredictedLineup({ lineup, homeTeam, awayTeam, unavailabl
             );
           })}
         </div>
+
+        {teamUnavailable && teamUnavailable.length > 0 && (
+          <div className="px-6 py-4 bg-slate-50 border-t border-slate-100">
+            <h4 className="text-[13px] font-bold text-slate-500 uppercase tracking-wider mb-4 flex items-center gap-2">
+               <AlertCircle className="w-4 h-4 text-rose-500" />
+               Unavailable Players
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {teamUnavailable.map((player, idx) => (
+                <div key={idx} className="flex items-center gap-3 bg-white p-3 rounded-xl border border-slate-200">
+                   <div className="w-10 h-10 rounded-full overflow-hidden bg-slate-100 shrink-0">
+                     <img 
+                       src={getImageUrl('player', player.player_id || player.id)} 
+                       alt={player.name} 
+                       className="w-full h-full object-cover"
+                       onError={(e) => {
+                         e.target.onerror = null;
+                         e.target.src = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(player.name || 'P') + '&background=e2e8f0&color=64748b&bold=true';
+                       }}
+                     />
+                   </div>
+                   <div className="flex flex-col">
+                     <span className="font-bold text-sm text-slate-900">{player.name}</span>
+                     <span className="text-xs text-rose-600 font-medium capitalize">
+                       {player.status || player.reason || 'Unavailable'}
+                     </span>
+                   </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   };
 
   return (
     <div className="space-y-6">
-      {renderTeamPredictedLineup(homeTeam, homeFormation, homeStarters, confidence)}
-      {renderTeamPredictedLineup(awayTeam, awayFormation, awayStarters, confidence)}
+      {renderTeamPredictedLineup(homeTeam, homeFormation, homeStarters, confidence, uniqueHomeUnavailable)}
+      {renderTeamPredictedLineup(awayTeam, awayFormation, awayStarters, confidence, uniqueAwayUnavailable)}
     </div>
   );
 }
