@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getLiveMatches, formatMinute } from '../services/bsdApi';
 import LiveMatchCard from '../components/LiveMatchCard';
+import LiveSignalsAlerts from '../components/LiveSignalsAlerts';
 import { MatchSkeleton } from '../components/LoadingSkeleton';
 import { Activity, RefreshCw, Copy, Check } from 'lucide-react';
 import SEO from '../components/SEO';
@@ -139,23 +140,26 @@ export default function LiveScores() {
           <p className="text-red-400">{error}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {loading && matches.length === 0 ? (
-            Array.from({ length: 6 }).map((_, i) => <MatchSkeleton key={i} />)
-          ) : matches.length > 0 ? (
-            matches.map((match) => (
-              <LiveMatchCard key={match.id} match={match} />
-            ))
-          ) : (
-            <div className="col-span-full bg-white rounded-xl p-12 text-center border border-slate-200 shadow-sm">
-              <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200">
-                <Activity className="w-8 h-8 text-slate-400" />
+        <>
+          <LiveSignalsAlerts matches={matches} />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {loading && matches.length === 0 ? (
+              Array.from({ length: 6 }).map((_, i) => <MatchSkeleton key={i} />)
+            ) : matches.length > 0 ? (
+              matches.map((match) => (
+                <LiveMatchCard key={match.id} match={match} />
+              ))
+            ) : (
+              <div className="col-span-full bg-white rounded-xl p-12 text-center border border-slate-200 shadow-sm">
+                <div className="w-16 h-16 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-4 border border-slate-200">
+                  <Activity className="w-8 h-8 text-slate-400" />
+                </div>
+                <h3 className="text-xl font-bold text-slate-900 mb-2">No Live Matches</h3>
+                <p className="text-slate-500">There are currently no live matches being played.</p>
               </div>
-              <h3 className="text-xl font-bold text-slate-900 mb-2">No Live Matches</h3>
-              <p className="text-slate-500">There are currently no live matches being played.</p>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

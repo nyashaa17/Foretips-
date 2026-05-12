@@ -20,6 +20,7 @@ import TeamForm from '../components/TeamForm';
 import HeadToHead from '../components/HeadToHead';
 import MatchLineups from '../components/MatchLineups';
 import MatchEvents from '../components/MatchEvents';
+import LiveSignalsAlerts from '../components/LiveSignalsAlerts';
 
 const StatBar = ({ label, home, away, type = 'percentage' }) => {
   const homeVal = parseFloat(home) || 0;
@@ -539,6 +540,10 @@ export default function MatchDetails() {
           Stats
         </button>
       </div>
+
+      {eventDetails?.status && ['1st_half', '2nd_half', 'halftime', 'ET', 'HT', 'live'].includes(eventDetails.status) && (
+        <LiveSignalsAlerts matches={[eventDetails]} />
+      )}
 
       {activeTab === 'events' && (
         <MatchEvents incidents={eventIncidents} />

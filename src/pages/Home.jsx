@@ -1,11 +1,11 @@
 import { useState, useEffect, useMemo, lazy, Suspense, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { getPredictions, getMemoryCache, getPredictionsCacheKey } from '../services/api';
+import { getLiveMatches } from '../services/bsdApi';
 import { filterYesterdayMatches, filterTodayMatches, filterTomorrowMatches } from '../utils/dateFilters';
 import PredictionCard from '../components/PredictionCard';
 import { PredictionSkeleton } from '../components/LoadingSkeleton';
 import FAQSection from '../components/FAQSection';
-import RecentSuccess from '../components/RecentSuccess';
 import { TrendingUp, Activity, ChevronRight, Star, Calendar, Trophy, MessageCircle, Zap, Users, Medal, Smartphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { hapticFeedback } from '../utils/haptics';
@@ -13,15 +13,34 @@ import SEO from '../components/SEO';
 import clsx from 'clsx';
 import { MotionCard } from '../components/MotionCard';
 
-const MatchPollCarousel = lazy(() => import('../components/MatchPollCarousel'));
+const LiveSignalsAlerts = lazy(() => import('../components/LiveSignalsAlerts'));
 
 export default function Home() {
   const [dateFilter, setDateFilter] = useState('today'); // 'yesterday', 'today', 'tomorrow'
   
   const [predictions, setPredictions] = useState([]);
+  const [liveMatches, setLiveMatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const predictionsRef = useRef(null);
+
+  const fetchLive = async () => {
+    try {
+      const data = await getLiveMatches();
+      setLiveMatches(data);
+    } catch (err) {
+      console.error('Error fetching live matches:', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchLive();
+    const interval = setInterval(() => {
+      fetchLive();
+    }, 30000); // Auto refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
 
   const loadPredictions = async (filter) => {
     try {
@@ -193,12 +212,10 @@ export default function Home() {
       </motion.div>
       
       <Suspense fallback={<div className="w-full max-w-xl mx-auto aspect-square bg-slate-100 animate-pulse rounded-[2rem] my-12"></div>}>
-        <MatchPollCarousel />
+        <LiveSignalsAlerts matches={liveMatches} />
       </Suspense>
 
-      <RecentSuccess />
-
-      {/* Predictions Section */}
+      
       <section ref={predictionsRef}>
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
@@ -276,6 +293,7 @@ export default function Home() {
         )}
       </section>
 
+      
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <FAQSection />
       </section>
