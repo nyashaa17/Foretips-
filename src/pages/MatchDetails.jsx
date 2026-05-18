@@ -541,9 +541,9 @@ export default function MatchDetails() {
         </button>
       </div>
 
-      {eventDetails?.status && ['1st_half', '2nd_half', 'halftime', 'ET', 'HT', 'live'].includes(eventDetails.status) && (
+      {/* {eventDetails?.status && ['1st_half', '2nd_half', 'halftime', 'ET', 'HT', 'live'].includes(eventDetails.status) && (
         <LiveSignalsAlerts matches={[eventDetails]} />
-      )}
+      )} */}
 
       {activeTab === 'events' && (
         <MatchEvents incidents={eventIncidents} />

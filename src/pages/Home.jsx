@@ -212,7 +212,7 @@ export default function Home() {
       </motion.div>
       
       <Suspense fallback={<div className="w-full max-w-xl mx-auto aspect-square bg-slate-100 animate-pulse rounded-[2rem] my-12"></div>}>
-        <LiveSignalsAlerts matches={liveMatches} />
+        {/* <LiveSignalsAlerts matches={liveMatches} /> */}
       </Suspense>
 
       
