@@ -1,7 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import Navbar from './Navbar';
 import Footer from './Footer';
-import Sidebar from './Sidebar';
 import WhatsAppPopup from './WhatsAppPopup';
 import { useState, useEffect } from 'react';
 import { supabase } from '../supabaseClient';
@@ -64,11 +63,10 @@ export default function Layout() {
   };
 
   return (
-    <div className="flex min-h-screen bg-slate-50">
-      {user && <Sidebar user={user} isAdmin={isAdmin} handleSignOut={handleSignOut} />}
+    <div className="flex min-h-screen bg-slate-50 flex-col">
       <div className="flex-1 flex flex-col min-w-0">
         <Navbar />
-        <main className="flex-1">
+        <main className="flex-1 w-full min-w-0">
           <Outlet />
         </main>
         <Footer />

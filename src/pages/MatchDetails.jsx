@@ -93,6 +93,12 @@ export default function MatchDetails() {
           // It's a prediction ID, but we need to fetch it to get the event ID
           data = await getPredictionDetails(id);
           eventId = data?.event?.id || data?.event?.api_id;
+          
+          if (!data) {
+            // Fallback: it might actually be an event ID in the /match/ route
+            data = await getPredictionByEventId(id);
+            eventId = data?.event?.id || data?.event?.api_id || id;
+          }
         }
 
         // Fallback to initialPrediction if API returns null
@@ -101,7 +107,12 @@ export default function MatchDetails() {
           eventId = data.event?.id || data.event?.api_id;
         }
 
+        // If we still don't have an eventId, we can forcefully try using the id as the eventId.
         if (!data && !eventId) {
+          eventId = id;
+        }
+
+        if (!data && !eventId && !id) {
           setError('Match details not found.');
           setMatch(null);
         } else {

@@ -119,6 +119,16 @@ async function startServer() {
     }
   }));
 
+  // Remove trailing slashes to fix Vite resolving issues
+  app.use((req, res, next) => {
+    if (req.path.length > 1 && req.path.endsWith('/')) {
+      const query = req.url.slice(req.path.length)
+      const safepath = req.path.slice(0, -1)
+      req.url = safepath + query
+    }
+    next()
+  })
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
