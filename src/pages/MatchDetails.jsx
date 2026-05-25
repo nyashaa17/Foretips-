@@ -10,6 +10,7 @@ import { GoogleGenAI } from "@google/genai";
 import { supabase } from '../supabaseClient';
 import ReactMarkdown from 'react-markdown';
 import NotFound from './NotFound';
+import { slugify } from '../utils/url';
 
 import SmartLogo from '../components/SmartLogo';
 import MatchSpatialData from '../components/MatchSpatialData';
@@ -92,6 +93,20 @@ export default function MatchDetails() {
         } else {
           // It's a prediction ID, but we need to fetch it to get the event ID
           data = await getPredictionDetails(id);
+          
+          // Collision Check
+          if (data && routeId) {
+            const hTeam = typeof data.event?.home_team === 'string' ? data.event.home_team : (data.event?.home_team_obj?.name || data.event?.home_team?.name || '');
+            const aTeam = typeof data.event?.away_team === 'string' ? data.event.away_team : (data.event?.away_team_obj?.name || data.event?.away_team?.name || '');
+            const hParts = slugify(hTeam).split('-');
+            const aParts = slugify(aTeam).split('-');
+            const matchHome = hParts.some(p => p.length > 2 && routeId.includes(p));
+            const matchAway = aParts.some(p => p.length > 2 && routeId.includes(p));
+            if (!matchHome && !matchAway && hParts.length > 0 && aParts.length > 0) {
+              data = null; // Discard invalid result
+            }
+          }
+
           eventId = data?.event?.id || data?.event?.api_id;
           
           if (!data) {
