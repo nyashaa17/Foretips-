@@ -7,7 +7,6 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { Suspense, lazy } from 'react';
 import ScrollToTop from './components/ScrollToTop';
 import CookieConsent from './components/CookieConsent';
-import UpdateNotification from './components/UpdateNotification';
 import Layout from './components/Layout';
 const Home = lazy(() => import('./pages/Home'));
 const Predictions = lazy(() => import('./pages/Predictions'));
@@ -74,7 +73,6 @@ export default function App() {
           </Routes>
         </Suspense>
         <CookieConsent />
-        <UpdateNotification />
       </div>
     </Router>
   );
